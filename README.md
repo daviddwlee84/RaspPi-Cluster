@@ -42,6 +42,6 @@ The following tutorial we will use a four Raspberry Pi Cluster for an example.
 
 ## Steps
 
-1. Setup Raspberry Pis
+1. [Setup Raspberry Pis](SetupRaspPi.md)
 2. Assemble hardwares
 3. Setup fabric - execute shell commands remotely over SSH to all hosts at once!
