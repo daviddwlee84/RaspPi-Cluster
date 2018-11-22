@@ -1,50 +1,38 @@
 # RaspPi-Cluster
 
-The following tutorial we will use a four node Raspberry Pi Cluster for an example.
+The following tutorial I will use a four node Raspberry Pi Cluster for an example.
 
-(And I'll use my preferred selection between many similar options.)
+> (And I'll use my preferred selection between many similar options.)
 
-## Hardware Preparation
+After setting up the environment, I'll implement some popular distributed computing ecosystem on it.
+And try to write a quick start script for them. And maybe some application damo.
 
-### Raspberry Pi
+## Usage
 
-* Raspberry Pi 3 Model B+ × 4
-* MicroSD card × 4
+(put some useage of instant-use script here)
 
-### Internet
+## Applications
 
-* 5-port Ethernet Switch × 1
-* Ethernet cable
-    * short × 4
-    * long  × 1
+## Steps
 
-### Power
+A step by step record of how I build this system.
 
-* 4-port USB Power Hub × 1
-* MicroUSB cable × 4
-
-### Optional
-
-* (4-layer) Cluster Frame × 1
-* [~~Ducky Mini~~](http://www.duckychannel.com.tw/en/ducky-mini/) with Cherry MX Brown switch :P
-
-## Software Dependencies
-
-### Operating System
-
-* macOS
-* Raspbian
-
-### Python Packages
-
-* Python 3
-* [Fabric 2](https://www.fabfile.org/)
-
-## Steps [Main Part]
+* [Preparation](Preparation.md)
+    * Hardware purchase
+    * Software package and dependencies install
 
 1. [Setup Raspberry Pis](SetupRaspPi.md)
 2. Assemble hardwares
+    ![rpi-cluster](Picture/FourNodesRaspberryPiCluster.jpeg)
 3. [Setup fabric](SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
+
+## Notes about distributed computing
+
+* [MapReduce](Notes/Distributed_Computing/MapReduce.md)
+
+## TODO
+
+try hadoop, spark, kubernetes
 
 ## Links
 
