@@ -120,4 +120,11 @@ $ cat data/44604.txt.utf-8 | python3 mapper.py | sort -k1,1 | python3 reducer.py
 
 **Without Hadoop Steps**:
 
-TBD
+```sh
+# Go to project directory
+$ cd TextMining
+# Download NLTK
+$ bash download_NLTK.sh
+# Analysis (we'll use the data in the last example above)
+$ cat ../WordCountCombine/data/44604.txt.utf-8 | python3 mapper.py | python3 reducer.py
+```
