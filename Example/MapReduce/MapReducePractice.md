@@ -47,10 +47,10 @@ quux    2
 ```sh
 # Go to project directory
 $ cd GeneratorWordCount
-# Download Data
+# Download Data (already downloaded in data/)
 $ bash download_data.sh
 # Analysis
-$ cat *.txt | ./mapper.py | ./reducer.py
+$ cat data/*.txt | ./mapper.py | ./reducer.py
 ```
 
 ## Daily Exchange Rate
@@ -63,10 +63,10 @@ $ cat *.txt | ./mapper.py | ./reducer.py
 ```sh
 # Go to project directory
 $ cd DailyExchangeRate
-# Download Data
+# Download Data (already downloaded in data/)
 $ bash download_data.sh
 # Analysis
-$ cat daily.csv | python3 mapper.py | python3 reducer.py
+$ cat data/daily.csv | python3 mapper.py | python3 reducer.py
 ```
 
 ## Word Count and Text Mining
