@@ -1,5 +1,9 @@
 # Fabric
 
+A simple getting started guide of composing fabfile.
+
+[fabfile.py](Old/fabfile.py)
+
 ## Installation
 
 `pip install fabric`
@@ -25,6 +29,8 @@ from fabric import task
 def task_name(ctx, arg):
     print(arg)
 ```
+
+* [CLI Guild](http://docs.pyinvoke.org/en/latest/getting-started.html)
 
 ### Send a command to all the cluster
 
@@ -53,9 +59,12 @@ def CMD(ctx, command):
 
 Example: `fab CMD 'echo 'haha''`
 
-#### SerialGroup
+#### Groups
 
-TBD
+SerialGroup and ThreadingGroup
+
+* [api - group](http://docs.fabfile.org/en/2.4/api/group.html)
+* [getting started - multiple servers](http://docs.fabfile.org/en/2.4/getting-started.html#multiple-servers)
 
 ## Links
 
@@ -69,3 +78,4 @@ Trouble Shooting
 
 * [What does the “at” (@) symbol do in Python?](https://stackoverflow.com/questions/6392739/what-does-the-at-symbol-do-in-python)
 * [TypeError: Tasks must have an initial Context argument!](https://github.com/pyinvoke/invoke/issues/362)
+* [Converting list to *args when calling function](https://stackoverflow.com/questions/3941517/converting-list-to-args-when-calling-function) - *HOSTS
