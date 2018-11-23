@@ -55,7 +55,19 @@ $ cat *.txt | ./mapper.py | ./reducer.py
 
 ## Daily Exchange Rate
 
+* [mapper.py](DailyExchangeRate/mapper.py)
+* [reducer.py](DailyExchangeRate/reducer.py)
+
 **Without Hadoop Steps**:
+
+```sh
+# Go to project directory
+$ cd DailyExchangeRate
+# Download Data
+$ bash download_data.sh
+# Analysis
+$ cat daily.csv | python3 mapper.py | python3 reducer.py
+```
 
 ## Word Count and Text Mining
 
