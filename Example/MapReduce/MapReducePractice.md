@@ -10,11 +10,34 @@ Practice|Detail|Reference
 
 ## Word Count
 
-### General Version
+### General Version - Simple example
 
-**Without Hadoop Steps**:
+* [mapper.py](GeneralWordCount/mapper.py)
+* [reducer.py](GeneralWordCount/reducer.py)
 
-### Generator Version
+**Steps**:
+
+```sh
+# Go to project directory
+$ cd GeneralWordCount
+# Try mapper
+$ echo "foo foo quux labs foo bar quux" | ./mapper.py
+foo     1
+foo     1
+quux    1
+labs    1
+foo     1
+bar     1
+quux    1
+# Try entire procedure
+$ echo "foo foo quux labs foo bar quux" | ./mapper.py | sort -k1,1 | ./reducer.py
+bar     1
+foo     3
+labs    1
+quux    2
+```
+
+### Generator Version - Ebook example
 
 **Without Hadoop Steps**:
 
