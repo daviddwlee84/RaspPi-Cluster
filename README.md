@@ -9,7 +9,16 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ## Usage
 
-(put some usage of instant-use script here)
+[**Usage in Detail !!**](FabfileHelp.md)
+
+### Quick Start
+
+#### Hadoop
+
+```txt
+fab download-hadoop
+fab install-hadoop <- still working on it
+```
 
 ## Example
 
@@ -27,8 +36,11 @@ A step by step record of how I build this system.
 
 1. [Setup Raspberry Pis](SetupRaspPi.md)
 2. Assemble hardwares
+
     ![rpi-cluster](Picture/FourNodesRaspberryPiCluster.jpeg)
-3. [Setup fabric](SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
+
+3. [Setup fabric (brief notes)](SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
+4. [Setup Hadoop](SetupHadoop.md) <- still working on it
 
 ## Notes about distributed computing
 
