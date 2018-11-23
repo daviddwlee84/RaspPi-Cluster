@@ -18,6 +18,7 @@ Practice|Detail|Reference
 **Steps**:
 
 ```sh
+## Example 1
 # Go to project directory
 $ cd GeneralWordCount
 # Try mapper
@@ -73,8 +74,25 @@ $ cat data/daily.csv | python3 mapper.py | python3 reducer.py
 
 ### Word Count with Combine Step
 
+* [mapper.py](WordCountCombine/mapper.py)
+* [combiner.py](WordCountCombine/reducer.py) -> TBD
+* [reducer.py](WordCountCombine/reducer.py)
+
 **Without Hadoop Steps**:
+
+```sh
+# Go to project directory
+$ cd WordCountCombine
+# Download Data (already downloaded in data/)
+$ bash download_data.sh
+# Analysis (without combine)
+$ cat data/44604.txt.utf-8 | python3 mapper.py | sort -k1,1 | python3 reducer.py
+# Analysis (with combine)
+# TBD
+```
 
 ### Text Mining
 
 **Without Hadoop Steps**:
+
+TBD

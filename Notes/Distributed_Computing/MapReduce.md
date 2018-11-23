@@ -2,6 +2,14 @@
 
 ## Introduction
 
+## Character
+
+### Mapper
+
+### Combiner
+
+### Reducer
+
 ## Optimization
 
 ## Resources
@@ -20,6 +28,12 @@ Hadoop - The Definitive Guide
 
 * [Wiki - MapReduce](https://en.wikipedia.org/wiki/MapReduce)
 * [Hadoop Wiki - HadoopMapReduce](https://wiki.apache.org/hadoop/HadoopMapReduce)
+
+#### Topic
+
+Combiner
+
+* [Hadoop Combiner – Best Explanation to MapReduce Combiner](https://data-flair.training/blogs/hadoop-combiner-tutorial/)
 
 #### Example
 
