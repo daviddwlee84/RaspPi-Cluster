@@ -39,7 +39,19 @@ quux    2
 
 ### Generator Version - Ebook example
 
+* [mapper.py](GeneratorWordCount/mapper.py)
+* [reducer.py](GeneratorWordCount/reducer.py)
+
 **Without Hadoop Steps**:
+
+```sh
+# Go to project directory
+$ cd GeneratorWordCount
+# Download Data
+$ bash download_data.sh
+# Analysis
+$ cat *.txt | ./mapper.py | ./reducer.py
+```
 
 ## Daily Exchange Rate
 
