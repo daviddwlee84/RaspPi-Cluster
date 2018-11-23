@@ -38,6 +38,31 @@ labs    1
 quux    2
 ```
 
+![Example 2](https://cdn-images-1.medium.com/max/800/0*it9fFvZ5h2eFL2e3.jpg)
+
+```sh
+## Example 2
+# Go to project directory
+$ cd GeneralWordCount
+# Try mapper
+$ echo "X B B\nC B A\nX A C\n" | ./mapper.py
+X       1
+B       1
+B       1
+C       1
+B       1
+A       1
+X       1
+A       1
+C       1
+# Try entire procedure
+$ echo "X B B\nC B A\nX A C\n" | ./mapper.py | sort -k1,1 | ./reducer.py
+A       2
+B       3
+C       2
+X       2
+```
+
 ### Generator Version - Ebook example
 
 * [mapper.py](GeneratorWordCount/mapper.py)
