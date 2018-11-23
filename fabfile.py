@@ -21,7 +21,8 @@ HOSTS = [
 USER = 'pi'
 PASSWORD = 'raspberry'
 
-INSTALL_FILE_PATH = './Files'
+FILE_PATH = './Files' # configure files
+TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 REMOTE_UPLOAD = os.path.join('/home', USER, 'Downloads')
 
 
@@ -91,23 +92,71 @@ def CMD_parallel(ctx, command, verbose=False):
         for connection, result in results.items():
             print("{0.host}: {1.stdout}".format(connection, result))
 
-@task(help={'path-to-file': "Path to file in local", 'dest': "Remote destination", 'node-num': "Node number of HOSTS list"})
-def copyfile(ctx, path_to_file, dest=REMOTE_UPLOAD, node_num=-1):
+@task(help={'path-to-file': "Path to file in local", 'dest': "Remote destination (directory)", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
+def uploadfile(ctx, path_to_file, dest=REMOTE_UPLOAD, verbose=False, node_num=-1):
+    """
+    Copy local file to remote
+    """
     if int(node_num) == -1:
         # Run command on all nodes
         for connection in Group:
-            print("Connect to", connection)
-            print("Copying file %s to %s" % (path_to_file, dest))
-            connection.put(path_to_file, remote=dest)
+            if connection.run('test -f %s' % os.path.join(dest, os.path.basename(path_to_file)), warn=True).failed:
+                if verbose:
+                    print("Connect to", connection)
+                    print("Copying file %s to %s" % (path_to_file, dest))
+                connection.put(path_to_file, remote=dest)
+            else:
+                if verbose:
+                    print("File already exist")
     elif len(HOSTS) > int(node_num) >= 0:
         # Run command on specific node
         connection = connect(node_num)
-        print("Connect to", connection)
-        print("Copying file %s to %s" % (path_to_file, dest))
-        connection.put(path_to_file, remote=dest)
+        if connection.run('test -f %s' % os.path.join(dest, os.path.basename(path_to_file)), warn=True).failed:
+            if verbose:
+                print("Connect to", connection)
+                print("Copying file %s to %s" % (path_to_file, dest))
+            connection.put(path_to_file, remote=dest)
+        else:
+            if verbose:
+                print("File already exist")
     else:
         print('No such node.')    
         print('Node list:\n', HOSTS)
+    #TODO: chmod
+
+### Quick Setup
+
+@task
+def ssh_config(ctx):
+    """
+    Set up SSH keys for all pi@ user
+    """
+    # If ssh key doesn't exist in TEMP_FILES folder then generate one
+    os.system(f'mkdir -p {TEMP_FILES}')
+    if not os.path.isfile(f'{TEMP_FILES}/id_rsa'):
+        try:
+            # Remove remote ssh key (make sure it's the same version)
+            CMD_parallel(ctx, "rm .ssh/id_rsa*")
+        except:
+            print('Already clean')
+        # Generate ssh key
+        os.system(f"ssh-keygen -t rsa -b 4096 -N '' -C 'cluster user key' -f {TEMP_FILES}/id_rsa")
+    
+    # Upload ssh key
+    CMD_parallel(ctx, 'mkdir -p -m 0700 .ssh')
+    uploadfile(ctx, f'{TEMP_FILES}/id_rsa', '.ssh', verbose=True)
+    uploadfile(ctx, f'{TEMP_FILES}/id_rsa.pub', '.ssh', verbose=True)
+
+    # Append 
+    with open(f'{TEMP_FILES}/id_rsa.pub', 'r') as pubkeyfile:
+        pubkey = pubkeyfile.read()
+        for connection in Group:
+            connection.run('touch .ssh/authorized_keys')
+            if connection.run('grep -Fxq "%s" %s' % (pubkey, '.ssh/authorized_keys'), warn=True).failed:
+                print('No such key, append')
+                connection.run('echo "%s" >> .ssh/authorized_keys' % pubkey)
+            else:
+                print('Already set')
 
 ### Hadoop
 
@@ -116,8 +165,8 @@ def download_hadoop(ctx):
     """
     Download specific version of Hadoop to ./Files
     """
-    print('Downloading to', os.path.join(INSTALL_FILE_PATH, HADOOP_TARFILE))
-    os.system(f'wget http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz -P {INSTALL_FILE_PATH}')
+    print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
+    os.system(f'wget http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz -P {TEMP_FILES}')
 
 @task
 def install_hadoop(ctx):
@@ -133,7 +182,7 @@ def install_hadoop(ctx):
         print("Connect to", connection)
         if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:
             print("Did not find %s, uploading %s..." % (HADOOP_INSTALL, HADOOP_TARFILE))
-            connection.put(os.path.join(INSTALL_FILE_PATH, HADOOP_TARFILE), remote=REMOTE_UPLOAD)
+            connection.put(os.path.join(TEMP_FILES, HADOOP_TARFILE), remote=REMOTE_UPLOAD)
             print("Extracting tar file...")
             connection.sudo('tar zxf %s -C %s' % (os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE), '/opt'))
             print("Clean up tar file...")

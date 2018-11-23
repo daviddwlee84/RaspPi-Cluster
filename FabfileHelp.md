@@ -59,6 +59,40 @@ Example:
 fab CMD "sudo apt-get install -y vim"
 ```
 
+### File Transmit
+
+#### Upload file
+
+```txt
+$ fab --help uploadfile
+Usage: fab [--core-opts] uploadfile [--options] [other tasks here ...]
+
+Docstring:
+  Copy local file to remote
+
+Options:
+  -d STRING, --dest=STRING           Remote destination (directory)
+  -n INT, --node-num=INT             Node number of HOSTS list
+  -p STRING, --path-to-file=STRING   Path to file in local
+  -v, --verbose                      Verbose output
+```
+
+## Quick Setup
+
+### ssh key
+
+It will auto generate ssh key in `temp_files/` and copy it to all remote
+
+```sh
+fab ssh-config
+```
+
+You can try ssh without passowrd now!
+
+```sh
+ssh -i temp_files/id_rsa pi@192.168.1.109
+```
+
 ## Hadoop
 
 ### Download Hadoop to local

@@ -13,6 +13,12 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ### Quick Start
 
+#### Quick Setup
+
+```sh
+fab ssh-config # Generate ssh-key and setup to all nodes
+```
+
 #### Hadoop
 
 ```txt
