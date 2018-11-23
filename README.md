@@ -5,13 +5,17 @@ The following tutorial I will use a four node Raspberry Pi Cluster for an exampl
 > (And I'll use my preferred selection between many similar options.)
 
 After setting up the environment, I'll implement some popular distributed computing ecosystem on it.
-And try to write a quick start script for them. And maybe some application damo.
+And try to write a quick start script for them. And maybe some example demo.
 
 ## Usage
 
-(put some useage of instant-use script here)
+(put some usage of instant-use script here)
 
-## Applications
+## Example
+
+Subject|Ecosystem|Purpose
+-------|---------|-------
+[MapReduce Practice](Example/MapReduce/)|Hadoop|MapReduce practice with Hadoop Streaming
 
 ## Steps
 
@@ -28,11 +32,19 @@ A step by step record of how I build this system.
 
 ## Notes about distributed computing
 
+Algorithm
+
 * [MapReduce](Notes/Distributed_Computing/MapReduce.md)
 
-## TODO
+## Notes about specific ecosystem
 
-try hadoop, spark, kubernetes
+[Hadoop](Notes/Hadoop/Hadoop.md)
+
+* HDFS
+
+Spark
+
+Kubernetes
 
 ## Links
 
