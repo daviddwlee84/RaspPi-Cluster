@@ -192,7 +192,7 @@ def download_hadoop(ctx):
     Download specific version of Hadoop to ./Files
     """
     print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
-    os.system(f'wget  -P {TEMP_FILES}')
+    os.system(f'wget {HADOOP_MIRROR} -P {TEMP_FILES}')
 
 @task
 def install_hadoop(ctx):
