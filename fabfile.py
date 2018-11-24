@@ -53,6 +53,9 @@ HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoo
 FILE_PATH = './Files' # configure files
 TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 
+# Rasbian /etc/apt/sources.list
+UNCOMMIT_URL = r"deb-src http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi"
+
 # Hadoop
 HADOOP_FOLDER = 'hadoop-%s' % (HADOOP_VERSION,)
 HADOOP_TARFILE = 'hadoop-%s.tar.gz' % (HADOOP_VERSION,)
@@ -184,6 +187,41 @@ def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
     else:
         print('ssh -i %s %s' % (private_key, getHosts(CONN_MODE)[int(node_num)]))
         os.system('ssh -i %s %s' % (private_key, getHosts(CONN_MODE)[int(node_num)]))
+
+@task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
+def append_line(ctx, line_content, remote_file_path, override=False, verbose=False):
+    """
+    Append (or Override) content in new line in a remote file
+    """
+    if override:
+        CMD_parallel(ctx, 'echo "%s" | sudo tee %s' % (line_content, remote_file_path))
+    else:
+        CMD_parallel(ctx, 'echo "%s" | sudo tee -a %s' % (line_content, remote_file_path))
+    if verbose:
+        CMD_parallel(ctx, "cat %s" % remote_file_path, verbose=True)
+
+@task(help={'line-content': 'Content match to comment (or uncomment)', 'remote-file-path': 'Path to remote file', 'uncomment': 'Uncomment line instead of comment', 'verbose': 'Verbose output'})
+def comment_line(ctx, line_content, remote_file_path, uncomment=False, verbose=False):
+    """
+    Commment or uncomment a line in a remote file
+    """
+    if uncomment:
+        CMD_parallel(ctx, 'line="%s"; sudo sed -i "s/^#\($line\)\$/$line/" %s' % (line_content, remote_file_path))
+    else:
+        CMD_parallel(ctx, 'line="%s"; sudo sed -i "s/^$line\$/#&/" %s' % (line_content, remote_file_path))
+    if verbose:
+        CMD_parallel(ctx, "cat %s" % remote_file_path, verbose=True)
+
+@task(help={'uncommit': 'Uncommit deb-src line in Raspbian (testing phase)'})
+def update_and_upgrade(ctx, uncommit=False):
+    """
+    apt-update and apt-upgrade (this may take a while)
+    """
+    if uncommit:
+        sources_list = '/etc/apt/sources.list'
+        print("Uncommit deb-src in", sources_list)
+        comment_line(ctx, UNCOMMIT_URL, sources_list, uncomment=True, verbose=True)
+    CMD_parallel(ctx, 'sudo apt-get update -y && sudo apt-get upgrade -y')
 
 ### Quick Setup
 

@@ -123,6 +123,81 @@ use your own key
 fab ssh-connect 0 -p=~/.ssh/id_rsa
 ```
 
+### Utility Funcitons
+
+These function will do the action to all the nodes
+
+#### Append or Override a line to a file
+
+> like echo something >> file or echo something > file
+
+```txt
+fab --help append-line
+Usage: fab [--core-opts] append-line [--options] [other tasks here ...]
+
+Docstring:
+  Append (or Override) content in new line in a remote file
+
+Options:
+  -l STRING, --line-content=STRING       Contnet to add
+  -o, --override                         Override content instead of append
+  -r STRING, --remote-file-path=STRING   Path to remote file
+  -v, --verbose                          Verbose output
+```
+
+Append Exmaple:
+
+```sh
+fab append-line "Appending new line" test.txt -v
+```
+
+Override Example:
+
+```sh
+fab append-line "Overriding line" test.txt -o -v
+```
+
+#### Comment or Uncomment a line in a file
+
+```txt
+fab --help comment-line
+Usage: fab [--core-opts] comment-line [--options] [other tasks here ...]
+
+Docstring:
+  Commment or uncomment a line in a remote file
+
+Options:
+  -l STRING, --line-content=STRING       Content match to comment (or uncomment)
+  -r STRING, --remote-file-path=STRING   Path to remote file
+  -u, --uncomment                        Uncomment line instead of comment
+  -v, --verbose                          Verbose output
+```
+
+Comment Example:
+
+```sh
+fab comment-line "Appending new line" test.txt -v
+```
+
+Uncomment Example:
+
+```sh
+fab comment-line "Appending new line" test.txt -u -v
+```
+
+#### Update and then Upgrade
+
+```txt
+fab --help update-and-upgrade
+Usage: fab [--core-opts] update-and-upgrade [--options] [other tasks here ...]
+
+Docstring:
+  apt-update and apt-upgrade (this may take a while)
+
+Options:
+  -u, --uncommit   Uncommit deb-src line in Raspbian (testing phase)
+```
+
 ## Quick Setup
 
 ### Generate ssh key
