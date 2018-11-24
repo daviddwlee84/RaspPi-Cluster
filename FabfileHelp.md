@@ -18,6 +18,12 @@ Change some setting
 
 ## General usage
 
+### List current nodes
+
+```sh
+fab node-ls
+```
+
 ### Sending command
 
 #### CMD

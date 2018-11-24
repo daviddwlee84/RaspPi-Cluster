@@ -7,30 +7,44 @@ from fabric import Connection, ThreadingGroup
 # util
 import os
 from os.path import expanduser # home dir
+from enum import Enum
+
+class connection_mode(Enum):
+    IP = True
+    HOSTNAME = False
 
 #############################
 #       User Setting        #
 #############################
 
+# === Connection Settings === #
+
+NUM_NODES = 4
+
 # Host IP
-HOSTS = [
+HOSTS_IP = [
     '192.168.1.109', # Master
     '192.168.1.101',
     '192.168.1.102',
     '192.168.1.103',
 ]
 
-USER = 'pi' # later will be add to HOSTS
+# Hostname
+slaves = ['slave%i.local' % (i) for i in range(1, NUM_NODES)]
+HOSTNAMES = ['master.local'] + slaves
+
+# Default user and password
+USER = 'pi'
 PASSWORD = 'raspberry'
+
+CONN_MODE = connection_mode.IP # Connection mode
+# =========================== #
 
 REMOTE_UPLOAD = os.path.join('/home', USER, 'Downloads')
 
+# === Hadoop === #
 HADOOP_VERSION = '3.1.1'
 HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz'
-
-#NUM_SLAVES = 3
-#SLAVES = ['hadoop%i.local' % (i) for i in range(1, NUM_SLAVES+1)]
-#HOSTS = ['master.local'] + SLAVE
 
 ######### Some process #######
 # generally you don't need to modify things here
@@ -38,9 +52,6 @@ HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoo
 # File path
 FILE_PATH = './Files' # configure files
 TEMP_FILES = './temp_files' # file download, generated ssh key etc.
-
-# Add user to host
-HOSTS = list(map(lambda host: USER + '@' + host, HOSTS))
 
 # Hadoop
 HADOOP_FOLDER = 'hadoop-%s' % (HADOOP_VERSION,)
@@ -50,13 +61,28 @@ HADOOP_INSTALL = os.path.join('/opt', 'hadoop-%s' % (HADOOP_VERSION,))
 
 #############################
 #   Global Fabric Object    #
+#   and Important Settings  #
 #############################
+
+# Hostname
+def getHosts(mode=connection_mode.IP):
+    """
+    Return hosts by either IP or Hostname
+    """
+    if mode == connection_mode.IP:
+        # Add user to host
+        hosts = list(map(lambda host: USER + '@' + host, HOSTS_IP))
+    elif mode == connection_mode.HOSTNAME:
+        hosts = list(map(lambda host: USER + '@' + host, HOSTNAMES))
+    else:
+        print("Unknown mode...")
+    return hosts
 
 # for sudo privilege
 Configure = Config(overrides={'sudo': {'password': PASSWORD}})
 
 # Parallel Group
-Group = ThreadingGroup(*HOSTS, connect_kwargs={'password': PASSWORD}, config=Configure)
+Group = ThreadingGroup(*getHosts(CONN_MODE), connect_kwargs={'password': PASSWORD}, config=Configure)
 
 #############################
 #       Helper Function     #
@@ -66,11 +92,19 @@ def connect(node_num):
     """
     Get Single Conneciton to node
     """
-    return Connection(HOSTS[int(node_num)], connect_kwargs={'password': PASSWORD}, config=Configure)
+    return Connection(getHosts(CONN_MODE)[int(node_num)], connect_kwargs={'password': PASSWORD}, config=Configure)
 
 #############################
 
 ### General usage
+@task
+def node_ls(ctx):
+    """
+    List nodes IP and Hostname
+    """
+    print('Node list:')
+    print(getHosts(connection_mode.IP))
+    print(getHosts(connection_mode.HOSTNAME))
 
 @task(help={'command': "Command you want to sent to host", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def CMD(ctx, command, verbose=False, node_num=-1):
@@ -86,7 +120,7 @@ def CMD(ctx, command, verbose=False, node_num=-1):
             msg = "Ran {0.command!r} on {0.connection.host}, got stdout:\n{0.stdout}"
             if verbose:
                 print(msg.format(result))
-    elif len(HOSTS) > int(node_num) >= 0:
+    elif NUM_NODES > int(node_num) >= 0:
         # Run command on specific node
         connection = connect(node_num)
         if verbose:
@@ -94,7 +128,7 @@ def CMD(ctx, command, verbose=False, node_num=-1):
         connection.run(command, pty=verbose)
     else:
         print('No such node.')    
-        print('Node list:\n', HOSTS)
+        node_ls(ctx)
 
 @task(help={'command': "Command you want to sent to host in parallel", 'verbose': "Verbose output"})
 def CMD_parallel(ctx, command, verbose=False):
@@ -122,7 +156,7 @@ def uploadfile(ctx, path_to_file, dest=REMOTE_UPLOAD, verbose=False, node_num=-1
             else:
                 if verbose:
                     print("File already exist")
-    elif len(HOSTS) > int(node_num) >= 0:
+    elif NUM_NODES > int(node_num) >= 0:
         # Run command on specific node
         connection = connect(node_num)
         if connection.run('test -f %s' % os.path.join(dest, os.path.basename(path_to_file)), warn=True).failed:
@@ -135,8 +169,9 @@ def uploadfile(ctx, path_to_file, dest=REMOTE_UPLOAD, verbose=False, node_num=-1
                 print("File already exist")
     else:
         print('No such node.')    
-        print('Node list:\n', HOSTS)
+        node_ls(ctx)
     #TODO: chmod
+    #TODO: Fist download to Downloads/ and move to destination (prevent permission deny) or check if allow and add a flag
 
 @task(help={'node-num': "Node number of HOSTS list", 'private-key': "Path to private key"})
 def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
@@ -147,8 +182,8 @@ def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
     if not os.path.isfile(private_key):
         print("Can't find private key at", private_key)
     else:
-        print('ssh -i %s %s' % (private_key, HOSTS[int(node_num)]))
-        os.system('ssh -i %s %s' % (private_key, HOSTS[int(node_num)]))
+        print('ssh -i %s %s' % (private_key, getHosts(CONN_MODE)[int(node_num)]))
+        os.system('ssh -i %s %s' % (private_key, getHosts(CONN_MODE)[int(node_num)]))
 
 ### Quick Setup
 
