@@ -79,3 +79,5 @@ Trouble Shooting
 * [What does the “at” (@) symbol do in Python?](https://stackoverflow.com/questions/6392739/what-does-the-at-symbol-do-in-python)
 * [TypeError: Tasks must have an initial Context argument!](https://github.com/pyinvoke/invoke/issues/362)
 * [Converting list to *args when calling function](https://stackoverflow.com/questions/3941517/converting-list-to-args-when-calling-function) - *HOSTS
+
+* [Adding a line into the hosts file, getting permission denied when using sudo - Mac](https://superuser.com/questions/538760/adding-a-line-into-the-hosts-file-getting-permission-denied-when-using-sudo-m)

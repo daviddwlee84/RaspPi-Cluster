@@ -30,8 +30,8 @@ HOSTS_IP = [
 ]
 
 # Hostname
-slaves = ['slave%i.local' % (i) for i in range(1, NUM_NODES)]
-HOSTNAMES = ['master.local'] + slaves
+slavenames = ['slave%i' % (i) for i in range(1, NUM_NODES)]
+HOSTNAMES = ['master'] + slavenames
 
 # Default user and password
 USER = 'pi'
@@ -73,7 +73,7 @@ def getHosts(mode=connection_mode.IP):
         # Add user to host
         hosts = list(map(lambda host: USER + '@' + host, HOSTS_IP))
     elif mode == connection_mode.HOSTNAME:
-        hosts = list(map(lambda host: USER + '@' + host, HOSTNAMES))
+        hosts = list(map(lambda hostname: USER + '@' + hostname + '.local', HOSTNAMES))
     else:
         print("Unknown mode...")
     return hosts
@@ -88,11 +88,11 @@ Group = ThreadingGroup(*getHosts(CONN_MODE), connect_kwargs={'password': PASSWOR
 #       Helper Function     #
 #############################
 
-def connect(node_num):
+def connect(node_num, conn_mode=CONN_MODE):
     """
     Get Single Conneciton to node
     """
-    return Connection(getHosts(CONN_MODE)[int(node_num)], connect_kwargs={'password': PASSWORD}, config=Configure)
+    return Connection(getHosts(conn_mode)[int(node_num)], connect_kwargs={'password': PASSWORD}, config=Configure)
 
 #############################
 
@@ -188,6 +188,27 @@ def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
 ### Quick Setup
 
 @task
+def set_hostname(ctx):
+    """
+    Set hostname for each node. (it will need to reboot)
+    """
+    reboot = input('This command will need to reboot all the nodes, are you sure you want to continue? (y/N): ')
+    if reboot not in ('y', 'Y'):
+        return
+    for node_num, hostname in enumerate(HOSTNAMES):
+        print('Modifying %s (%d)...' % (hostname, node_num))
+        connection = connect(node_num, conn_mode=connection_mode.IP)
+        # Modify /etc/hostname
+        connection.sudo('echo "%s" | sudo tee /etc/hostname' % hostname)
+    # Reboot
+    print("Rebooting...")
+    try:
+        CMD_parallel(ctx, 'sudo reboot')
+    except:
+        # It will get error when lost connection
+        pass
+
+@task
 def ssh_config(ctx):
     """
     Set up SSH keys for all pi@ user
@@ -224,7 +245,7 @@ def ssh_config(ctx):
 @task
 def download_hadoop(ctx):
     """
-    Download specific version of Hadoop to ./Files
+    Download specific version of Hadoop to ./temp_files
     """
     print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
     os.system(f'wget {HADOOP_MIRROR} -P {TEMP_FILES}')

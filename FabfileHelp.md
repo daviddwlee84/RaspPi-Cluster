@@ -139,6 +139,24 @@ You can try ssh without passowrd now!
 ssh -i temp_files/id_rsa pi@192.168.1.109
 ```
 
+### Set Hostname
+
+It will need to rebot after setting.
+
+Hostname rule will be:
+
+```txt
+master --> first IP
+slave1 --> second IP
+slave2 --> third IP
+slave3 --> fourth IP
+... (If you have larger NUM_NODES and HOSTS_IP)
+```
+
+```sh
+fab set-hostname
+```
+
 ## Hadoop
 
 You should first setup some configure in [fabfile.py](fabfile.py).
