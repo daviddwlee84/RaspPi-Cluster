@@ -3,18 +3,32 @@
 ## Basic fab usage
 
 * `fab --list`: List your tasks
+* `fab [--core-opts] Task [--options] [other tasks here ...]`: Invoke / Call / Run a Function / Method / Task
 * `fab --help Task`: Show help
     * Docstring
+        * `"""  ...  """`
     * Options
-        * `@task(help={'command': "help description"})`
+        * `@task(help={...})`
+
+```py
+@task(help={'parameter': "help description"})
+def Task(ctx, parameter):
+    """
+    I'm docstring
+    """
+    ...
+```
 
 ## Before using my fabfile.py
 
 First open fabfile.py
 
-Change some setting
+Change some setting to fit your situation
 
-* HOSTS: hosts ip to your nodes
+* NUM_NODES: total nodes number
+* HOSTS_IP: hosts ip list to your nodes
+    * Initially you will need this, and I highly recommend [setting hostname](#Set-Hostname), then you can use `pi@hostname.local` to login.
+    * And after you set up hostnames, you can change connection mode `CONN_MODE = connection_mode.IP` to `CONN_MODE = connection_mode.HOSTNAME`, it will be more convenient if your router somehow allocate new IP for them.
 
 ## General usage
 

@@ -13,13 +13,13 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ### Quick Start
 
-First check user setting in [fabfile.py](fabfile.py)
+First check user setting in [fabfile.py](fabfile.py) (Important!)
 
 #### Quick Setup
 
 ```sh
-fab ssh-config # Generate ssh-key and setup to all nodes
 fab set-hostname # Set hostname for each node (will need to reboot)
+fab ssh-config # Generate ssh-key and setup to all nodes
 ```
 
 #### Hadoop

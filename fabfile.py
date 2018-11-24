@@ -53,9 +53,6 @@ HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoo
 FILE_PATH = './Files' # configure files
 TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 
-# Rasbian /etc/apt/sources.list
-UNCOMMIT_URL = r"deb-src http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi"
-
 # Hadoop
 HADOOP_FOLDER = 'hadoop-%s' % (HADOOP_VERSION,)
 HADOOP_TARFILE = 'hadoop-%s.tar.gz' % (HADOOP_VERSION,)
@@ -217,10 +214,12 @@ def update_and_upgrade(ctx, uncommit=False):
     """
     apt-update and apt-upgrade (this may take a while)
     """
+    # Raspbian /etc/apt/sources.list
+    UNCOMMENT_URL = r"deb-src http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi"
     if uncommit:
         sources_list = '/etc/apt/sources.list'
         print("Uncommit deb-src in", sources_list)
-        comment_line(ctx, UNCOMMIT_URL, sources_list, uncomment=True, verbose=True)
+        comment_line(ctx, UNCOMMENT_URL, sources_list, uncomment=True, verbose=True)
     CMD_parallel(ctx, 'sudo apt-get update -y && sudo apt-get upgrade -y')
 
 ### Quick Setup
