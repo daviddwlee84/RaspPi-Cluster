@@ -8,6 +8,14 @@
     * Options
         * `@task(help={'command': "help description"})`
 
+## Before using my fabfile.py
+
+First open fabfile.py
+
+Change some setting
+
+* HOSTS: hosts ip to your nodes
+
 ## General usage
 
 ### Sending command
@@ -77,11 +85,43 @@ Options:
   -v, --verbose                      Verbose output
 ```
 
+### ssh
+
+#### Connect to node
+
+Default using [pre-generate key](#Generate-ssh-key). Or you can specific your own key if you have already set it.
+
+```txt
+fab --help ssh-connect
+Usage: fab [--core-opts] ssh-connect [--options] [other tasks here ...]
+
+Docstring:
+  Connect to specific node using ssh private key
+
+Options:
+  -n STRING, --node-num=STRING      Node number of HOSTS list
+  -p STRING, --private-key=STRING   Path to private key
+```
+
+Example:
+
+use [pre-generate key](#Generate-ssh-key).
+
+```sh
+fab ssh-connect 0
+```
+
+use your own key
+
+```sh
+fab ssh-connect 0 -p=~/.ssh/id_rsa
+```
+
 ## Quick Setup
 
-### ssh key
+### Generate ssh key
 
-It will auto generate ssh key in `temp_files/` and copy it to all remote
+It will auto generate ssh key in `temp_files/` and copy it to all remote.
 
 ```sh
 fab ssh-config
@@ -94,6 +134,10 @@ ssh -i temp_files/id_rsa pi@192.168.1.109
 ```
 
 ## Hadoop
+
+You should first setup some configure in [fabfile.py](fabfile.py).
+
+* HADOOP_VERSION: default 3.1.1
 
 ### Download Hadoop to local
 

@@ -6,35 +6,47 @@ from fabric import Connection, ThreadingGroup
 
 # util
 import os
+from os.path import expanduser # home dir
 
 #############################
 #       User Setting        #
 #############################
 
+# Host IP
 HOSTS = [
-    'pi@192.168.1.109', # Master
-    'pi@192.168.1.101',
-    'pi@192.168.1.102',
-    'pi@192.168.1.103',
+    '192.168.1.109', # Master
+    '192.168.1.101',
+    '192.168.1.102',
+    '192.168.1.103',
 ]
 
-USER = 'pi'
+USER = 'pi' # later will be add to HOSTS
 PASSWORD = 'raspberry'
 
-FILE_PATH = './Files' # configure files
-TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 REMOTE_UPLOAD = os.path.join('/home', USER, 'Downloads')
 
-
 HADOOP_VERSION = '3.1.1'
-HADOOP_FOLDER = 'hadoop-%s' % (HADOOP_VERSION,)
-HADOOP_TARFILE = 'hadoop-%s.tar.gz' % (HADOOP_VERSION,)
-HADOOP_APACHE_PATH = '/hadoop/common/hadoop-%s/%s' % (HADOOP_VERSION, HADOOP_TARFILE)
-HADOOP_INSTALL = os.path.join('/opt', 'hadoop-%s' % (HADOOP_VERSION,))
+HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz'
 
 #NUM_SLAVES = 3
 #SLAVES = ['hadoop%i.local' % (i) for i in range(1, NUM_SLAVES+1)]
 #HOSTS = ['master.local'] + SLAVE
+
+######### Some process #######
+# generally you don't need to modify things here
+
+# File path
+FILE_PATH = './Files' # configure files
+TEMP_FILES = './temp_files' # file download, generated ssh key etc.
+
+# Add user to host
+HOSTS = list(map(lambda host: USER + '@' + host, HOSTS))
+
+# Hadoop
+HADOOP_FOLDER = 'hadoop-%s' % (HADOOP_VERSION,)
+HADOOP_TARFILE = 'hadoop-%s.tar.gz' % (HADOOP_VERSION,)
+HADOOP_APACHE_PATH = '/hadoop/common/hadoop-%s/%s' % (HADOOP_VERSION, HADOOP_TARFILE)
+HADOOP_INSTALL = os.path.join('/opt', 'hadoop-%s' % (HADOOP_VERSION,))
 
 #############################
 #   Global Fabric Object    #
@@ -50,8 +62,10 @@ Group = ThreadingGroup(*HOSTS, connect_kwargs={'password': PASSWORD}, config=Con
 #       Helper Function     #
 #############################
 
-# Get Single Conneciton to node
 def connect(node_num):
+    """
+    Get Single Conneciton to node
+    """
     return Connection(HOSTS[int(node_num)], connect_kwargs={'password': PASSWORD}, config=Configure)
 
 #############################
@@ -124,6 +138,18 @@ def uploadfile(ctx, path_to_file, dest=REMOTE_UPLOAD, verbose=False, node_num=-1
         print('Node list:\n', HOSTS)
     #TODO: chmod
 
+@task(help={'node-num': "Node number of HOSTS list", 'private-key': "Path to private key"})
+def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
+    """
+    Connect to specific node using ssh private key 
+    """    
+    private_key = expanduser(private_key) # expand ~ to actual route
+    if not os.path.isfile(private_key):
+        print("Can't find private key at", private_key)
+    else:
+        print('ssh -i %s %s' % (private_key, HOSTS[int(node_num)]))
+        os.system('ssh -i %s %s' % (private_key, HOSTS[int(node_num)]))
+
 ### Quick Setup
 
 @task
@@ -166,7 +192,7 @@ def download_hadoop(ctx):
     Download specific version of Hadoop to ./Files
     """
     print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
-    os.system(f'wget http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz -P {TEMP_FILES}')
+    os.system(f'wget  -P {TEMP_FILES}')
 
 @task
 def install_hadoop(ctx):
