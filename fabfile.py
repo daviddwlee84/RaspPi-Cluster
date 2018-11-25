@@ -395,3 +395,22 @@ def install_hadoop(ctx):
             print(f"User {HADOOP_USER} already in sudo")
         print("\tCurrent hadoop user's groups:", end=" ")
         connection.run(f'groups {HADOOP_USER}')
+
+    print("\n\n====== Generate ssh key =======")
+    os.system(f'mkdir -p {TEMP_FILES}/hadoopSSH') # Generate in local
+    if not os.path.isfile(f'{TEMP_FILES}/hadoopSSH/id_rsa'):
+        print(f"Generating hadoop key in {TEMP_FILES}/hadoopSSH")
+        os.system(f'ssh-keygen -t rsa -P "" -f {TEMP_FILES}/hadoopSSH/id_rsa')
+        os.system(f'cat {TEMP_FILES}/hadoopSSH/id_rsa.pub > {TEMP_FILES}/hadoopSSH/authorized_keys')
+
+    print("Uploading keys to remote")
+    for node_num in range(NUM_NODES):
+        connection = connect(node_num, user=HADOOP_USER, password=HADOOP_PASSWORD)
+        # Remove remote ssh key (make sure it's the same version)
+        try:
+            connection.run('rm .ssh/id_rsa* .ssh/authorized_keys')
+        except:
+            pass
+        connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa', remote=f'/home/{HADOOP_USER}/.ssh')
+        connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa.pub', remote=f'/home/{HADOOP_USER}/.ssh')
+        connection.put(f'{TEMP_FILES}/hadoopSSH/authorized_keys', remote=f'/home/{HADOOP_USER}/.ssh')
