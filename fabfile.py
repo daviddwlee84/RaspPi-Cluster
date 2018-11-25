@@ -148,38 +148,49 @@ def CMD_parallel(ctx, command, verbose=False):
         for connection, result in results.items():
             print("{0.host}: {1.stdout}".format(connection, result))
 
-@task(help={'path-to-file': "Path to file in local", 'dest': "Remote destination (directory)", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
-def uploadfile(ctx, path_to_file, dest=REMOTE_UPLOAD, verbose=False, node_num=-1):
+@task(help={'filepath': "Path to file in local", 'destination': "Remote destination (directory)", 'permission': "Use superuser to move file", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
+def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbose=False, node_num=-1):
     """
     Copy local file to remote
     """
-    if int(node_num) == -1:
-        # Run command on all nodes
-        for connection in Group:
-            if connection.run('test -f %s' % os.path.join(dest, os.path.basename(path_to_file)), warn=True).failed:
+    # Define helper function
+    def simple_upload(dest):
+        if int(node_num) == -1:
+            # Run command on all nodes
+            for connection in Group:
+                if connection.run('test -f %s' % os.path.join(dest, os.path.basename(filepath)), warn=True).failed:
+                    if verbose:
+                        print("Connect to", connection)
+                        print("Copying file %s to %s" % (filepath, dest))
+                    connection.put(filepath, remote=dest)
+                else:
+                    if verbose:
+                        print("File already exist")
+        elif NUM_NODES > int(node_num) >= 0:
+            # Run command on specific node
+            connection = connect(node_num)
+            if connection.run('test -f %s' % os.path.join(dest, os.path.basename(filepath)), warn=True).failed:
                 if verbose:
                     print("Connect to", connection)
-                    print("Copying file %s to %s" % (path_to_file, dest))
-                connection.put(path_to_file, remote=dest)
+                    print("Copying file %s to %s" % (filepath, dest))
+                connection.put(filepath, remote=dest)
             else:
                 if verbose:
                     print("File already exist")
-    elif NUM_NODES > int(node_num) >= 0:
-        # Run command on specific node
-        connection = connect(node_num)
-        if connection.run('test -f %s' % os.path.join(dest, os.path.basename(path_to_file)), warn=True).failed:
-            if verbose:
-                print("Connect to", connection)
-                print("Copying file %s to %s" % (path_to_file, dest))
-            connection.put(path_to_file, remote=dest)
         else:
-            if verbose:
-                print("File already exist")
+            print('No such node.')    
+            node_ls(ctx)
+
+    # Upload file
+    if permission:
+        simple_upload(REMOTE_UPLOAD)
+        print("Moving all file from %s to %s" % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
+        CMD_parallel(ctx, 'sudo mv %s %s' % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
     else:
-        print('No such node.')    
-        node_ls(ctx)
-    #TODO: chmod
-    #TODO: Fist download to Downloads/ and move to destination (prevent permission deny) or check if allow and add a flag
+        try:
+            simple_upload(destination)        
+        except PermissionError:
+            print("Your destination need superuser privilege, try using -p flag!")
 
 @task(help={'node-num': "Node number of HOSTS list", 'private-key': "Path to private key"})
 def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
@@ -348,6 +359,8 @@ def install_hadoop(ctx):
             connection.sudo('tar zxf %s -C %s' % (os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE), '/opt'))
             print("Clean up tar file...")
             connection.run('rm %s' % os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE))
+            #print("Change owner...") # haven't test yet
+            #connection.sudo('chown -R hadoop.hadoop %s' % HADOOP_INSTALL)
         else:
             print('Found %s, skip to next node' % HADOOP_INSTALL)
 

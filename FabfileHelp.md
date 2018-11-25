@@ -99,10 +99,23 @@ Docstring:
   Copy local file to remote
 
 Options:
-  -d STRING, --dest=STRING           Remote destination (directory)
-  -n INT, --node-num=INT             Node number of HOSTS list
-  -p STRING, --path-to-file=STRING   Path to file in local
-  -v, --verbose                      Verbose output
+  -d STRING, --destination=STRING   Remote destination (directory)
+  -f STRING, --filepath=STRING      Path to file in local
+  -n INT, --node-num=INT            Node number of HOSTS list
+  -p, --permission                  Use superuser to move file
+  -v, --verbose                     Verbose output
+```
+
+Simple example (upload to /home/pi/Downloads)
+
+```sh
+fab uploadfile ~/Desktop/deeplearningbook.pdf
+```
+
+Use permission flag if you want to upload file to somewhere need sudo priviledge.
+
+```sh
+fab uploadfile README.md -d=/etc -p
 ```
 
 ### ssh
@@ -146,7 +159,7 @@ These function will do the action to all the nodes
 > like echo something >> file or echo something > file
 
 ```txt
-fab --help append-line
+$ fab --help append-line
 Usage: fab [--core-opts] append-line [--options] [other tasks here ...]
 
 Docstring:
@@ -174,7 +187,7 @@ fab append-line "Overriding line" test.txt -o -v
 #### Comment or Uncomment a line in a file
 
 ```txt
-fab --help comment-line
+$ fab --help comment-line
 Usage: fab [--core-opts] comment-line [--options] [other tasks here ...]
 
 Docstring:
@@ -202,7 +215,7 @@ fab comment-line "Appending new line" test.txt -u -v
 #### Update and then Upgrade
 
 ```txt
-fab --help update-and-upgrade
+$ fab --help update-and-upgrade
 Usage: fab [--core-opts] update-and-upgrade [--options] [other tasks here ...]
 
 Docstring:
