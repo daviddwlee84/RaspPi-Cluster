@@ -42,4 +42,7 @@ fab install-hadoop
 
 ## TODO
 
-* fix IP
+* fix IP (maybe)
+* chown
+* configuration files
+    * node number dynamic config
