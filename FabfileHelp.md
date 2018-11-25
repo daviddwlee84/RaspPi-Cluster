@@ -246,6 +246,31 @@ slave3 --> fourth IP
 fab set-hostname
 ```
 
+### Change password
+
+This can change password for all user
+
+Method A. Login with pi and use it as superuser to change other user's password
+
+> This can accept any kind of password.
+
+```txt
+$ fab change-passwd pi
+What password do you want to set?
+```
+
+Method B. Login with that user and then change the password
+
+> This wiil need your current password for that user and your new password can't be too simple.
+
+(with -o flag)
+
+```txt
+$ fab change-passwd user -o
+What's your current password?
+What password do you want to set?
+```
+
 ## Hadoop
 
 You should first setup some configure in [fabfile.py](fabfile.py).

@@ -4,9 +4,13 @@ from fabric import Config
 # Connection
 from fabric import Connection, ThreadingGroup
 
+## Invoke
+from invoke import Responder
+
 # util
 import os
 from os.path import expanduser # home dir
+import getpass
 from enum import Enum
 
 class connection_mode(Enum):
@@ -37,7 +41,7 @@ HOSTNAMES = ['master'] + slavenames
 USER = 'pi'
 PASSWORD = 'raspberry'
 
-CONN_MODE = connection_mode.IP # Connection mode
+CONN_MODE = connection_mode.HOSTNAME # Connection mode
 # =========================== #
 
 REMOTE_UPLOAD = os.path.join('/home', USER, 'Downloads')
@@ -45,6 +49,10 @@ REMOTE_UPLOAD = os.path.join('/home', USER, 'Downloads')
 # === Hadoop === #
 HADOOP_VERSION = '3.1.1'
 HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz'
+
+HADOOP_GROUP = 'hadoop' # Hadoop group name
+HADOOP_USER = 'hduser' # Hadoop user name
+HADOOP_PASSWORD = 'hadoop' # Hadoop user password
 
 ######### Some process #######
 # generally you don't need to modify things here
@@ -65,15 +73,15 @@ HADOOP_INSTALL = os.path.join('/opt', 'hadoop-%s' % (HADOOP_VERSION,))
 #############################
 
 # Hostname
-def getHosts(mode=connection_mode.IP):
+def getHosts(user=USER, mode=connection_mode.IP):
     """
     Return hosts by either IP or Hostname
     """
     if mode == connection_mode.IP:
         # Add user to host
-        hosts = list(map(lambda host: USER + '@' + host, HOSTS_IP))
+        hosts = list(map(lambda host: user + '@' + host, HOSTS_IP))
     elif mode == connection_mode.HOSTNAME:
-        hosts = list(map(lambda hostname: USER + '@' + hostname + '.local', HOSTNAMES))
+        hosts = list(map(lambda hostname: user + '@' + hostname + '.local', HOSTNAMES))
     else:
         print("Unknown mode...")
     return hosts
@@ -82,17 +90,17 @@ def getHosts(mode=connection_mode.IP):
 Configure = Config(overrides={'sudo': {'password': PASSWORD}})
 
 # Parallel Group
-Group = ThreadingGroup(*getHosts(CONN_MODE), connect_kwargs={'password': PASSWORD}, config=Configure)
+Group = ThreadingGroup(*getHosts(mode=CONN_MODE), connect_kwargs={'password': PASSWORD}, config=Configure)
 
 #############################
 #       Helper Function     #
 #############################
 
-def connect(node_num, conn_mode=CONN_MODE):
+def connect(node_num, user=USER, password=PASSWORD, conn_mode=CONN_MODE, configure=Configure):
     """
     Get Single Conneciton to node
     """
-    return Connection(getHosts(conn_mode)[int(node_num)], connect_kwargs={'password': PASSWORD}, config=Configure)
+    return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password}, config=configure)
 
 #############################
 
@@ -103,8 +111,8 @@ def node_ls(ctx):
     List nodes IP and Hostname
     """
     print('Node list:')
-    print(getHosts(connection_mode.IP))
-    print(getHosts(connection_mode.HOSTNAME))
+    print(getHosts(mode=connection_mode.IP))
+    print(getHosts(mode=connection_mode.HOSTNAME))
 
 @task(help={'command': "Command you want to sent to host", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def CMD(ctx, command, verbose=False, node_num=-1):
@@ -182,8 +190,8 @@ def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
     if not os.path.isfile(private_key):
         print("Can't find private key at", private_key)
     else:
-        print('ssh -i %s %s' % (private_key, getHosts(CONN_MODE)[int(node_num)]))
-        os.system('ssh -i %s %s' % (private_key, getHosts(CONN_MODE)[int(node_num)]))
+        print('ssh -i %s %s' % (private_key, getHosts(mode=CONN_MODE)[int(node_num)]))
+        os.system('ssh -i %s %s' % (private_key, getHosts(mode=CONN_MODE)[int(node_num)]))
 
 @task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
 def append_line(ctx, line_content, remote_file_path, override=False, verbose=False):
@@ -277,6 +285,37 @@ def ssh_config(ctx):
             else:
                 print('Already set')
 
+@task(help={'user': 'The user you want to change password for', 'old': 'If enable this flag, it will use your user to login (i.e. ask your current password)'})
+def change_passwd(ctx, user, old=False):
+    """
+    Change a user's password for all nodes
+    """
+    if old:
+        # Method 1. Login with that user and then change the password
+        old_password = getpass.getpass("What's your current password?") 
+        new_password = getpass.getpass("What password do you want to set?") # If new password is too simple here, it will be reject...
+        currResponder = Responder(
+            pattern=r'current', # (current) UNIX password:
+            response=old_password+'\n',
+        )
+        newResponder = Responder(
+            pattern=r'new', # Enter new UNIX password: and Retype new UNIX password:
+            response=new_password+'\n',
+        )
+        for node_num in range(NUM_NODES):
+            connection = connect(node_num, user=user, password=old_password)
+            print(connection.run('hostname -I'))
+            connection.run('passwd', pty=True, watchers=[currResponder, newResponder])
+    else:
+        # Method 2. Login with pi and use it as superuser to change other user's password
+        new_password = getpass.getpass("What password do you want to set?") # It can accept all kinds of password
+        newResponder = Responder(
+            pattern=r'new', # Enter new UNIX password: and Retype new UNIX password:
+            response=new_password+'\n',
+        )
+        for connection in Group:
+            connection.sudo('sudo passwd %s' % user, pty=True, watchers=[newResponder])
+
 ### Hadoop
 
 @task
@@ -291,12 +330,15 @@ def download_hadoop(ctx):
 def install_hadoop(ctx):
     """
     Auto Setup Hadoop
+    1. Upload tar file
+    2. Add hadoop user and group
     """
     # SerialGroupt.put() is still pending
     # https://github.com/fabric/fabric/issues/1800
     # https://github.com/fabric/fabric/issues/1810
     # (but it is in the tutorial... http://docs.fabfile.org/en/2.4/getting-started.html#bringing-it-all-together)
 
+    print("====== Upload", HADOOP_TARFILE, "======")
     for connection in Group:
         print("Connect to", connection)
         if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:

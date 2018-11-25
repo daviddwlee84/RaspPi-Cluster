@@ -20,6 +20,7 @@ First check user setting in [fabfile.py](fabfile.py) (Important!)
 ```sh
 fab set-hostname # Set hostname for each node (will need to reboot)
 fab ssh-config # Generate ssh-key and setup to all nodes
+fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)
 ```
 
 #### Hadoop
@@ -41,7 +42,7 @@ A step by step record of how I build this system.
 
 * [Preparation](Preparation.md)
     * Hardware purchase
-    * Software package and dependencies install
+    * Software package and dependencies (PC/Laptop)
 
 1. [Setup Raspberry Pis](SetupRaspPi.md)
 2. Assemble hardwares
