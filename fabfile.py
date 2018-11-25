@@ -350,3 +350,48 @@ def install_hadoop(ctx):
             connection.run('rm %s' % os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE))
         else:
             print('Found %s, skip to next node' % HADOOP_INSTALL)
+
+    # Hadoop user create password responser
+    """
+    Enter new UNIX password
+    Retype new UNIX password
+    """
+    hadoopPasswordResponder = Responder(
+        pattern=r'new',
+        response=HADOOP_PASSWORD+'\n',
+    )
+    """
+    Enter the new value, or press ENTER for the default
+        Full Name []:
+        Room Number []:
+        Work Phone []:
+        Home Phone []:
+        Other []:
+    Is the information correct? [Y/n]
+    """
+    hduserResponder = Responder(
+        pattern=r'(\[\]:|\[Y/n\])',
+        response='\n'
+    )
+
+    print("\n\n====== Set user and group =======")
+    for connection in Group:
+        print("Setting user and group on", connection)
+        # Add a group, a user and then add the user to the group
+        try: # If already exists it will keep going
+            connection.sudo(f"sudo addgroup {HADOOP_GROUP}", hide=True)
+            print(f"Group {HADOOP_GROUP} added!")
+        except:
+            print(f"Group {HADOOP_GROUP} already exists")
+        try:
+            connection.sudo(f"sudo adduser --ingroup {HADOOP_GROUP} {HADOOP_USER}", hide=True, watchers=[hadoopPasswordResponder, hduserResponder])
+            print(f"User {HADOOP_USER} has been added in {HADOOP_GROUP}!")
+        except:
+            print(f"User {HADOOP_USER} already in {HADOOP_GROUP}")
+        try:
+            connection.sudo(f"sudo adduser {HADOOP_USER} sudo", hide=True)
+            print(f"User {HADOOP_USER} is a member of SUPERUSER!!")
+        except:
+            print(f"User {HADOOP_USER} already in sudo")
+        print("\tCurrent hadoop user's groups:", end=" ")
+        connection.run(f'groups {HADOOP_USER}')

@@ -27,3 +27,14 @@ fab install-hadoop
 1. Upload hadoop-3.1.1.tar.gz to each node
 2. Extract it
 3. Move to /opt
+
+### Set user name and group
+
+1. Add hadoop group
+2. Add hadoop user to hadoop group
+3. Add hadoop user to sudo group
+
+## TODO
+
+* fix IP
+* ssh key
