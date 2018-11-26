@@ -10,7 +10,7 @@ from invoke import Responder
 # util
 import os
 from os.path import expanduser # home dir
-import getpass
+import getpass # password input
 from enum import Enum
 
 class connection_mode(Enum):
@@ -184,7 +184,8 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
     # Upload file
     if permission:
         simple_upload(REMOTE_UPLOAD)
-        print("Moving all file from %s to %s" % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
+        if verbose:
+            print("Moving all file from %s to %s" % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
         CMD_parallel(ctx, 'sudo mv %s %s' % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
     else:
         try:
@@ -421,7 +422,7 @@ def install_hadoop(ctx):
         connection = connect(node_num, user=HADOOP_USER, password=HADOOP_PASSWORD)
         # Remove remote ssh key (make sure it's the same version)
         try:
-            connection.run('rm .ssh/id_rsa* .ssh/authorized_keys')
+            connection.run('rm .ssh/id_rsa* .ssh/authorized_keys', hide=True)
         except:
             pass
         connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa', remote=f'/home/{HADOOP_USER}/.ssh')

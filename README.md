@@ -50,6 +50,8 @@ A step by step record of how I build this system.
     ![rpi-cluster](Picture/FourNodesRaspberryPiCluster.jpeg)
 
 3. [Setup fabric (brief notes)](SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
+    * I've built some utility function first and then move on setup Hadoop
+    * when any general purpose manipulation needed I'll add it.
 4. [Setup Hadoop](SetupHadoop.md) <- still working on it
 
 ## Notes about distributed computing
@@ -72,7 +74,7 @@ Kubernetes
 
 ### Similar Project
 
-* [gregbaker/raspberry-pi-cluster](https://github.com/gregbaker/raspberry-pi-cluster)
+* [gregbaker/raspberry-pi-cluster](https://github.com/gregbaker/raspberry-pi-cluster) - use fabric 1.X
 * [How to build a 7 node Raspberry Pi Hadoop Cluster](http://www.nigelpond.com/uploads/How-to-build-a-7-node-Raspberry-Pi-Hadoop-Cluster.pdf)
 * [A Hadoop data lab project on Raspberry Pi](https://blogs.sap.com/2015/04/25/a-hadoop-data-lab-project-on-raspberry-pi-part-14/)
 * [Raspberry PI Hadoop Cluster](http://www.widriksson.com/raspberry-pi-hadoop-cluster/)
