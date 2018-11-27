@@ -208,12 +208,13 @@ def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
 @task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
 def append_line(ctx, line_content, remote_file_path, override=False, verbose=False):
     """
-    Append (or Override) content in new line in a remote file
+    Append (or Override) content in new line in a remote file.
+    (prevent to use ' ' in your string or it may be ignore)
     """
     if override:
-        CMD_parallel(ctx, 'echo "%s" | sudo tee %s' % (line_content, remote_file_path))
+        CMD_parallel(ctx, "echo '%s' | sudo tee %s" % (line_content, remote_file_path))
     else:
-        CMD_parallel(ctx, 'echo "%s" | sudo tee -a %s' % (line_content, remote_file_path))
+        CMD_parallel(ctx, "echo '%s' | sudo tee -a %s" % (line_content, remote_file_path))
     if verbose:
         CMD_parallel(ctx, "cat %s" % remote_file_path, verbose=True)
 
@@ -342,28 +343,11 @@ def download_hadoop(ctx):
 def install_hadoop(ctx):
     """
     Auto Setup Hadoop
-    1. Upload tar file
-    2. Add hadoop user and group
+    1. Add hadoop user and group
+    2. Generate ssh key for hadoop user
+    3. Upload tar file, extract it and change owner to hadoop group and user
+    4. Setup environment variable in /etc/bash.bashrc
     """
-    # SerialGroupt.put() is still pending
-    # https://github.com/fabric/fabric/issues/1800
-    # https://github.com/fabric/fabric/issues/1810
-    # (but it is in the tutorial... http://docs.fabfile.org/en/2.4/getting-started.html#bringing-it-all-together)
-
-    print("====== Upload", HADOOP_TARFILE, "======")
-    for connection in Group:
-        print("Connect to", connection)
-        if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:
-            print("Did not find %s, uploading %s..." % (HADOOP_INSTALL, HADOOP_TARFILE))
-            connection.put(os.path.join(TEMP_FILES, HADOOP_TARFILE), remote=REMOTE_UPLOAD)
-            print("Extracting tar file...")
-            connection.sudo('tar zxf %s -C %s' % (os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE), '/opt'))
-            print("Clean up tar file...")
-            connection.run('rm %s' % os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE))
-            #print("Change owner...") # haven't test yet
-            #connection.sudo('chown -R hadoop.hadoop %s' % HADOOP_INSTALL)
-        else:
-            print('Found %s, skip to next node' % HADOOP_INSTALL)
 
     # Hadoop user create password responser
     """
@@ -428,3 +412,40 @@ def install_hadoop(ctx):
         connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa', remote=f'/home/{HADOOP_USER}/.ssh')
         connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa.pub', remote=f'/home/{HADOOP_USER}/.ssh')
         connection.put(f'{TEMP_FILES}/hadoopSSH/authorized_keys', remote=f'/home/{HADOOP_USER}/.ssh')
+
+    print("====== Upload", HADOOP_TARFILE, "======")
+    for connection in Group:
+        print("Connect to", connection)
+        if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:
+            print("Did not find %s, uploading %s..." % (HADOOP_INSTALL, HADOOP_TARFILE))
+            connection.put(os.path.join(TEMP_FILES, HADOOP_TARFILE), remote=REMOTE_UPLOAD)
+            print("Extracting tar file...")
+            connection.sudo('tar zxf %s -C %s' % (os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE), '/opt'))
+            print("Clean up tar file...")
+            connection.run('rm %s' % os.path.join(REMOTE_UPLOAD, HADOOP_TARFILE))
+            print("Change owner...")
+            connection.sudo(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {HADOOP_INSTALL}')
+        else:
+            print('Found %s, skip to next node' % HADOOP_INSTALL)
+
+    print("\n\n====== Setup environment variable ======")
+    bashrc_location = '/etc/bash.bashrc'
+    bashrc_setting = f'''
+# Hadoop Settings
+export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")
+export HADOOP_HOME={HADOOP_INSTALL}
+export HADOOP_INSTALL=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export PATH=$PATH:$HADOOP_INSTALL/bin
+'''
+    for connection in Group:
+        if connection.run("grep -Fxq '%s' %s" % ("# Hadoop Settings", bashrc_location), warn=True).failed:
+            print('No previous settings, append settings...')
+            append_line(ctx, bashrc_setting, bashrc_location)
+            #pirnt('Current appending:')
+            #connection.run("tail -n 8 %s" % bashrc_location) # check the settings
+            print('Applying changes...')
+            connection.run('source %s' % bashrc_location) # apply changes
+        else:
+            print('Setting already exist')
+        
