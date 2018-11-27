@@ -62,10 +62,8 @@ FILE_PATH = './Files' # configure files
 TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 
 # Hadoop
-HADOOP_FOLDER = 'hadoop-%s' % (HADOOP_VERSION,)
-HADOOP_TARFILE = 'hadoop-%s.tar.gz' % (HADOOP_VERSION,)
-HADOOP_APACHE_PATH = '/hadoop/common/hadoop-%s/%s' % (HADOOP_VERSION, HADOOP_TARFILE)
-HADOOP_INSTALL = os.path.join('/opt', 'hadoop-%s' % (HADOOP_VERSION,))
+HADOOP_TARFILE = f'hadoop-{HADOOP_VERSION}.tar.gz'
+HADOOP_INSTALL = os.path.join('/opt', f'hadoop-{HADOOP_VERSION}')
 
 #############################
 #   Global Fabric Object    #
@@ -151,7 +149,7 @@ def CMD_parallel(ctx, command, verbose=False):
 @task(help={'filepath': "Path to file in local", 'destination': "Remote destination (directory)", 'permission': "Use superuser to move file", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbose=False, node_num=-1):
     """
-    Copy local file to remote
+    Copy local file to remote. (If the file exist, it will be overwritten)
     """
     # Define helper function
     def simple_upload(dest):
@@ -339,6 +337,20 @@ def download_hadoop(ctx):
     print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
     os.system(f'wget {HADOOP_MIRROR} -P {TEMP_FILES}')
 
+@task(help={'filefolder': "Folder with all the configuration files", 'verbose': "Verbose output"})
+def update_hadoop_conf(ctx, filesfolder=FILE_PATH, verbose=False):
+    """
+    Upload hadoop configuration files. (if exist then it will update/overwrite them.)
+    Must contain files: 'core-site.xml', 'mapred-site.xml', 'hdfs-site.xml', 'yarn-site.xml'
+    """
+    conffiles = ['core-site.xml', 'mapred-site.xml', 'hdfs-site.xml', 'yarn-site.xml']
+    for conffile in conffiles:
+        local = os.path.join(filesfolder, conffile)
+        destinaiton = os.path.join(HADOOP_INSTALL, 'etc/hadoop', conffile)
+        if verbose:
+            print("Uploading", local, "to", destinaiton)
+        uploadfile(ctx, local, destinaiton, permission=True)
+
 @task(help={'verbose': "More detail of setup checking"})
 def install_hadoop(ctx, verbose=False):
     """
@@ -454,4 +466,10 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
         if verbose:
             print("Hadoop version:")
             connection.run('hadoop version')
-        
+
+    # Not sure if it's necessary to modify in {HADOOP_INSTALL}/etc/hadoop/hadoop-env.sh
+    # JAVA_HOME
+    # HADOOP_HEAPSIZE
+
+    print("\n\n====== Copy configure files ======")
+    update_hadoop_conf(ctx)

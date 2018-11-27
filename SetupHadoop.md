@@ -55,9 +55,25 @@ fab install-hadoop
 1. Append setting in /etc/bash.bashrc
 2. Source it to apply setting
 
+### Update hadoop configuration
+
+Use update-hadoop-conf
+
+## Update hadoop configuration files
+
+Update these files to the remotes: (will overwrite the original content)
+
+* core-site.xml
+* mapred-site.xml
+* hdfs-site.xml
+* yarn-site.xml
+
+```sh
+fab update-hadoop-conf
+```
+
 ## TODO
 
 * fix IP (maybe)
-* chown
-* configuration files
-    * node number dynamic config
+* make another .md about how to configure hadooop configure file
+    * node number dynamic config (hostname or something else)

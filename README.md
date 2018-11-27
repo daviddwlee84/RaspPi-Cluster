@@ -25,9 +25,12 @@ fab change-passwd # Change password for more security (Remember also change in f
 
 #### Hadoop
 
-```txt
-fab download-hadoop
-fab install-hadoop <- still working on it
+If you changed default hostname in fabfile.py. Make sure you also change in hadoop configuraiton file in ./Files.
+
+```sh
+fab download-hadoop # Download hadoop tar from mirror
+fab install-hadoop # An one button setup for hadoop environment on all nodes
+fab update-hadoop-conf # Every time you update configure file in local you can update it to all nodes at once
 ```
 
 ## Example
