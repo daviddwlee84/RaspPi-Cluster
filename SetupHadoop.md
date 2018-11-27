@@ -18,6 +18,8 @@ fab download-hadoop
 
 ## Install Hadoop
 
+(to see more message use `-v` flag)
+
 ```sh
 fab install-hadoop
 ```

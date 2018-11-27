@@ -339,8 +339,8 @@ def download_hadoop(ctx):
     print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
     os.system(f'wget {HADOOP_MIRROR} -P {TEMP_FILES}')
 
-@task
-def install_hadoop(ctx):
+@task(help={'verbose': "More detail of setup checking"})
+def install_hadoop(ctx, verbose=False):
     """
     Auto Setup Hadoop
     1. Add hadoop user and group
@@ -439,13 +439,19 @@ export YARN_HOME=$HADOOP_HOME
 export PATH=$PATH:$HADOOP_INSTALL/bin
 '''
     for connection in Group:
+        print("Setting", connection)
         if connection.run("grep -Fxq '%s' %s" % ("# Hadoop Settings", bashrc_location), warn=True).failed:
             print('No previous settings, append settings...')
             append_line(ctx, bashrc_setting, bashrc_location)
-            #pirnt('Current appending:')
-            #connection.run("tail -n 8 %s" % bashrc_location) # check the settings
+            if verbose:
+                print('Tail of %s:' % bashrc_location)
+                connection.run("tail -n 8 %s" % bashrc_location) # check the settings
             print('Applying changes...')
             connection.run('source %s' % bashrc_location) # apply changes
         else:
             print('Setting already exist')
+        
+        if verbose:
+            print("Hadoop version:")
+            connection.run('hadoop version')
         
