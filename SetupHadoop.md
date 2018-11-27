@@ -54,6 +54,8 @@ fab install-hadoop
 
 1. Append setting in /etc/bash.bashrc
 2. Source it to apply setting
+3. Also configure in HADOOP_INSTALL/etc/hadoop/hadoop-env.sh
+    * JAVA_HOME
 
 ### Update hadoop configuration
 
@@ -71,6 +73,11 @@ Update these files to the remotes: (will overwrite the original content)
 ```sh
 fab update-hadoop-conf
 ```
+
+## Setup HDFS
+
+1. Make directories and change their owner
+2. Format HDFS namenode
 
 ## TODO
 

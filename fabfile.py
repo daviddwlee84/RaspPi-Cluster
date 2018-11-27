@@ -85,16 +85,19 @@ def getHosts(user=USER, mode=connection_mode.IP):
     return hosts
 
 # for sudo privilege
-Configure = Config(overrides={'sudo': {'password': PASSWORD}})
+PiConfig = Config(overrides={'sudo': {'password': PASSWORD}})
+HadoopConfig = Config(overrides={'sudo': {'password': HADOOP_PASSWORD}})
 
 # Parallel Group
-Group = ThreadingGroup(*getHosts(mode=CONN_MODE), connect_kwargs={'password': PASSWORD}, config=Configure)
+PiGroup = ThreadingGroup(*getHosts(user=USER, mode=CONN_MODE), connect_kwargs={'password': PASSWORD}, config=PiConfig)
+# For hadoop user
+HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER, mode=CONN_MODE), connect_kwargs={'password': HADOOP_PASSWORD}, config=HadoopConfig)
 
 #############################
 #       Helper Function     #
 #############################
 
-def connect(node_num, user=USER, password=PASSWORD, conn_mode=CONN_MODE, configure=Configure):
+def connect(node_num, user=USER, password=PASSWORD, conn_mode=CONN_MODE, configure=PiConfig):
     """
     Get Single Conneciton to node
     """
@@ -115,13 +118,13 @@ def node_ls(ctx):
 @task(help={'command': "Command you want to sent to host", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def CMD(ctx, command, verbose=False, node_num=-1):
     """
-    Run command on all nodes in serial order
+    Run command on all nodes in serial order. (with Pi user)
     """
     if int(node_num) == -1:
         # Run command on all nodes
         if verbose:
             print("Sending commend")
-        for connection in Group:
+        for connection in PiGroup:
             result = connection.run(command, hide=True)
             msg = "Ran {0.command!r} on {0.connection.host}, got stdout:\n{0.stdout}"
             if verbose:
@@ -136,15 +139,19 @@ def CMD(ctx, command, verbose=False, node_num=-1):
         print('No such node.')    
         node_ls(ctx)
 
-@task(help={'command': "Command you want to sent to host in parallel", 'verbose': "Verbose output"})
-def CMD_parallel(ctx, command, verbose=False):
+@task(help={'command': "Command you want to sent to host in parallel", 'hadoop': "Use hadoop user to login or default use pi.", 'verbose': "Verbose output"})
+def CMD_parallel(ctx, command, hadoop=False, verbose=False):
     """
-    Execute command on all nodes in parallel
+    Execute command on all nodes in parallel. (with Pi user or Hadoop user)
     """
-    results = Group.run(command, hide=True)
+    if hadoop:
+        results = HadoopGroup.run(command, hide=True)
+    else:
+        results = PiGroup.run(command, hide=True)
+    
     if verbose:
         for connection, result in results.items():
-            print("{0.host}: {1.stdout}".format(connection, result))
+            print("{0.host}:\n{1.stdout}\n".format(connection, result))
 
 @task(help={'filepath': "Path to file in local", 'destination': "Remote destination (directory)", 'permission': "Use superuser to move file", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbose=False, node_num=-1):
@@ -155,7 +162,7 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
     def simple_upload(dest):
         if int(node_num) == -1:
             # Run command on all nodes
-            for connection in Group:
+            for connection in PiGroup:
                 if connection.run('test -f %s' % os.path.join(dest, os.path.basename(filepath)), warn=True).failed:
                     if verbose:
                         print("Connect to", connection)
@@ -222,10 +229,21 @@ def comment_line(ctx, line_content, remote_file_path, uncomment=False, verbose=F
     Commment or uncomment a line in a remote file
     """
     if uncomment:
-        CMD_parallel(ctx, 'line="%s"; sudo sed -i "s/^#\($line\)\$/$line/" %s' % (line_content, remote_file_path))
+        CMD_parallel(ctx, 'line="%s"; sudo sed -i "s/^#.*\($line\)\$/$line/" %s' % (line_content, remote_file_path))
     else:
-        CMD_parallel(ctx, 'line="%s"; sudo sed -i "s/^$line\$/#&/" %s' % (line_content, remote_file_path))
+        CMD_parallel(ctx, 'line="%s"; sudo sed -i "s/^$line\$/# &/" %s' % (line_content, remote_file_path))
     if verbose:
+        CMD_parallel(ctx, "cat %s" % remote_file_path, verbose=True)
+
+@task(help={'match': 'Pattern to match', 'replace': 'String to replace', 'remote-file-path': 'Path to remote file', 'verbose': 'Verbose output'})
+def find_and_replace(ctx, match, replace, remote_file_path, verbose=False):
+    """
+    Find pattern matched and replace it
+    """
+    CMD_parallel(ctx, "sudo sed -i 's/%s/%s/' %s" % (match, replace, remote_file_path), verbose=verbose)
+    if verbose:
+        print('Replacing %s with %s in %s' % (match, replace, remote_file_path))
+        print('Result:')
         CMD_parallel(ctx, "cat %s" % remote_file_path, verbose=True)
 
 @task(help={'uncommit': 'Uncommit deb-src line in Raspbian (testing phase)'})
@@ -288,7 +306,7 @@ def ssh_config(ctx):
     # Append 
     with open(f'{TEMP_FILES}/id_rsa.pub', 'r') as pubkeyfile:
         pubkey = pubkeyfile.read()
-        for connection in Group:
+        for connection in PiGroup:
             connection.run('touch .ssh/authorized_keys')
             if connection.run('grep -Fxq "%s" %s' % (pubkey, '.ssh/authorized_keys'), warn=True).failed:
                 print('No such key, append')
@@ -324,7 +342,7 @@ def change_passwd(ctx, user, old=False):
             pattern=r'new', # Enter new UNIX password: and Retype new UNIX password:
             response=new_password+'\n',
         )
-        for connection in Group:
+        for connection in PiGroup:
             connection.sudo('sudo passwd %s' % user, pty=True, watchers=[newResponder])
 
 ### Hadoop
@@ -385,7 +403,7 @@ def install_hadoop(ctx, verbose=False):
     )
 
     print("\n\n====== Set user and group =======")
-    for connection in Group:
+    for connection in PiGroup:
         print("Setting user and group on", connection)
         # Add a group, a user and then add the user to the group
         try: # If already exists it will keep going
@@ -426,7 +444,7 @@ def install_hadoop(ctx, verbose=False):
         connection.put(f'{TEMP_FILES}/hadoopSSH/authorized_keys', remote=f'/home/{HADOOP_USER}/.ssh')
 
     print("====== Upload", HADOOP_TARFILE, "======")
-    for connection in Group:
+    for connection in PiGroup:
         print("Connect to", connection)
         if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:
             print("Did not find %s, uploading %s..." % (HADOOP_INSTALL, HADOOP_TARFILE))
@@ -450,7 +468,7 @@ export HADOOP_INSTALL=$HADOOP_HOME
 export YARN_HOME=$HADOOP_HOME
 export PATH=$PATH:$HADOOP_INSTALL/bin
 '''
-    for connection in Group:
+    for connection in PiGroup:
         print("Setting", connection)
         if connection.run("grep -Fxq '%s' %s" % ("# Hadoop Settings", bashrc_location), warn=True).failed:
             print('No previous settings, append settings...')
@@ -467,9 +485,33 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
             print("Hadoop version:")
             connection.run('hadoop version')
 
-    # Not sure if it's necessary to modify in {HADOOP_INSTALL}/etc/hadoop/hadoop-env.sh
     # JAVA_HOME
-    # HADOOP_HEAPSIZE
+    hadoop_env_file = f'{HADOOP_INSTALL}/etc/hadoop/hadoop-env.sh'
+    print("Setting", hadoop_env_file)
+    comment_line(ctx, 'export JAVA_HOME=', hadoop_env_file, uncomment=True)
+    find_and_replace(ctx, r'^export JAVA_HOME=.*', r'export JAVA_HOME=\$\(readlink -f \/usr\/bin\/java \| sed "s:bin\/java::"\)', hadoop_env_file)
+    # HADOOP_HEAPSIZE <- Don't know if it's needed yet.
 
     print("\n\n====== Copy configure files ======")
     update_hadoop_conf(ctx)
+    print("All files have updated!")
+
+    print("\n\n====== HDFS ======")
+
+    print("Creating HDFS directories...")
+    HadoopGroup.run(f'sudo mkdir -p -m 0750 /hadoop/tmp && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/tmp')
+    HadoopGroup.run(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
+    HadoopGroup.run(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
+
+    print("Formating HDFS...")
+    """
+    ...
+    ...
+    Re-format filesystem in Storage Directory root= /hadoop/namenode; location= null ? (Y or N)
+    """
+    #NamenodeResponder = Responder(
+    #    pattern=r'\(Y or N\)',
+    #    response='Y\n',
+    #)
+    # I just leave user to select Y or N in case of accidentally reformat it
+    HadoopGroup.run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format') # Use hadoop user to login

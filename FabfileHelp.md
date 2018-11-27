@@ -47,7 +47,7 @@ $ fab --help CMD
 Usage: fab [--core-opts] CMD [--options] [other tasks here ...]
 
 Docstring:
-  Run command on all nodes in serial order
+  Run command on all nodes in serial order. (with Pi user)
 
 Options:
   -c STRING, --command=STRING   Command you want to sent to host
@@ -74,17 +74,24 @@ $ fab --help CMD-parallel
 Usage: fab [--core-opts] CMD-parallel [--options] [other tasks here ...]
 
 Docstring:
-  Execute command on all nodes in parallel
+  Execute command on all nodes in parallel. (with Pi user or Hadoop user)
 
 Options:
   -c STRING, --command=STRING   Command you want to sent to host in parallel
+  -h, --hadoop                  Use hadoop user to login or default use pi.
   -v, --verbose                 Verbose output
 ```
 
 Example:
 
 ```sh
-fab CMD "sudo apt-get install -y vim"
+fab CMD-parallel "sudo apt-get install -y vim"
+```
+
+Hadoop User Example
+
+```sh
+fab CMD-parallel "jps" -h -v
 ```
 
 ### File Transmit
@@ -210,6 +217,30 @@ Uncomment Example:
 
 ```sh
 fab comment-line "Appending new line" test.txt -u -v
+```
+
+#### Find a pattern and replace
+
+> Can deem it as a warped version of `sed`
+
+```txt
+$ fab --help find-and-replace
+Usage: fab [--core-opts] find-and-replace [--options] [other tasks here ...]
+
+Docstring:
+  Find pattern matched and replace it
+
+Options:
+  -e STRING, --remote-file-path=STRING   Path to remote file
+  -m STRING, --match=STRING              Pattern to match
+  -r STRING, --replace=STRING            String to replace
+  -v, --verbose                          Verbose output
+```
+
+Example:
+
+```sh
+fab find-and-replace '^export PATH=.*' 'export PATH=$PATH:~/bin' .bashrc
 ```
 
 #### Update and then Upgrade
