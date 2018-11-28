@@ -21,6 +21,10 @@ class connection_mode(Enum):
 #       User Setting        #
 #############################
 
+# Local file path
+FILE_PATH = './Files' # configure files
+TEMP_FILES = './temp_files' # file download, generated ssh key etc.
+
 # === Connection Settings === #
 
 NUM_NODES = 4
@@ -41,29 +45,41 @@ HOSTNAMES = ['master'] + slavenames
 USER = 'pi'
 PASSWORD = 'raspberry'
 
-CONN_MODE = connection_mode.HOSTNAME # Connection mode
+# Default SSH Private Key path
+# if you're using server you've already generate key for it
+DEFAULT_SSHKEY = f'{TEMP_FILES}/id_rsa'
+
+# Connection mode
+# USE connection_mode.IP MODE BEFORE YOU SETUP HOSTNAME
+# OR MODIFY 'master' ABOVE TO 'raspberrypi' (WHICH IS DEFAULT HOSTNAME FOR RASPBERRY PI)
+# IF YOU ONLY RUN ON SINGLE NODE
+CONN_MODE = connection_mode.HOSTNAME
 # =========================== #
 
-REMOTE_UPLOAD = os.path.join('/home', USER, 'Downloads')
+# Default upload remote directory
+REMOTE_UPLOAD = f'/home/{USER}/Downloads'
 
 # === Hadoop === #
 HADOOP_VERSION = '3.1.1'
-HADOOP_MIRROR = f'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common/hadoop-{HADOOP_VERSION}/hadoop-{HADOOP_VERSION}.tar.gz'
+#HADOOP_MIRROR = 'http://ftp.mirror.tw/pub/apache/hadoop/common' # Taiwan mirror
+HADOOP_MIRROR = 'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common' # China Tsinghua mirror
 
 HADOOP_GROUP = 'hadoop' # Hadoop group name
 HADOOP_USER = 'hduser' # Hadoop user name
 HADOOP_PASSWORD = 'hadoop' # Hadoop user password
 
 ######### Some process #######
-# generally you don't need to modify things here
+# Generally you don't need to modify things here
+# unless you clearly understand the dependencies (e.g. hadoop config xml)
 
-# File path
-FILE_PATH = './Files' # configure files
-TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 
 # Hadoop
 HADOOP_TARFILE = f'hadoop-{HADOOP_VERSION}.tar.gz'
-HADOOP_INSTALL = os.path.join('/opt', f'hadoop-{HADOOP_VERSION}')
+HADOOP_SRC_TARFILE = f'hadoop-{HADOOP_VERSION}-src.tar.gz'
+HADOOP_REMOTE_TAR = f'{HADOOP_MIRROR}/hadoop-{HADOOP_VERSION}/{HADOOP_TARFILE}'
+HADOOP_REMOTE_SRC_TAR = f'{HADOOP_MIRROR}/hadoop-{HADOOP_VERSION}/{HADOOP_SRC_TARFILE}'
+HADOOP_INSTALL = f'/opt/hadoop-{HADOOP_VERSION}' # i.e. $HADOOP_HOME
+HADOOP_BUILD = f'/home/{HADOOP_USER}/hadoop-{HADOOP_VERSION}-src' # location to extract and build hadoop
 
 #############################
 #   Global Fabric Object    #
@@ -89,19 +105,19 @@ PiConfig = Config(overrides={'sudo': {'password': PASSWORD}})
 HadoopConfig = Config(overrides={'sudo': {'password': HADOOP_PASSWORD}})
 
 # Parallel Group
-PiGroup = ThreadingGroup(*getHosts(user=USER, mode=CONN_MODE), connect_kwargs={'password': PASSWORD}, config=PiConfig)
+PiGroup = ThreadingGroup(*getHosts(user=USER, mode=CONN_MODE), connect_kwargs={'password': PASSWORD, 'key_filename': DEFAULT_SSHKEY}, config=PiConfig)
 # For hadoop user
-HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER, mode=CONN_MODE), connect_kwargs={'password': HADOOP_PASSWORD}, config=HadoopConfig)
+HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER, mode=CONN_MODE), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{TEMP_FILES}/hadoopSSH/id_rsa'}, config=HadoopConfig)
 
 #############################
 #       Helper Function     #
 #############################
 
-def connect(node_num, user=USER, password=PASSWORD, conn_mode=CONN_MODE, configure=PiConfig):
+def connect(node_num, user=USER, password=PASSWORD, private_key_path=DEFAULT_SSHKEY, conn_mode=CONN_MODE, configure=PiConfig):
     """
     Get Single Conneciton to node
     """
-    return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password}, config=configure)
+    return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password, 'key_filename': private_key_path}, config=configure)
 
 #############################
 
@@ -111,6 +127,7 @@ def node_ls(ctx):
     """
     List nodes IP and Hostname
     """
+    print('You, %s, have %d nodes' % (USER, NUM_NODES))
     print('Node list:')
     print(getHosts(mode=connection_mode.IP))
     print(getHosts(mode=connection_mode.HOSTNAME))
@@ -157,6 +174,7 @@ def CMD_parallel(ctx, command, hadoop=False, verbose=False):
 def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbose=False, node_num=-1):
     """
     Copy local file to remote. (If the file exist, it will be overwritten)
+    Make sure you are the owner of the remote directory
     """
     # Define helper function
     def simple_upload(dest):
@@ -186,6 +204,10 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
             print('No such node.')    
             node_ls(ctx)
 
+    # Make sure default upload folder exist
+    # Don't use sudo, or there will cause permission denied problem
+    # since the owner of the directory will be sudo:sudo
+    CMD_parallel(ctx, f'mkdir -p {REMOTE_UPLOAD}')
     # Upload file
     if permission:
         simple_upload(REMOTE_UPLOAD)
@@ -198,17 +220,30 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
         except PermissionError:
             print("Your destination need superuser privilege, try using -p flag!")
 
-@task(help={'node-num': "Node number of HOSTS list", 'private-key': "Path to private key"})
-def ssh_connect(ctx, node_num, private_key=f'{TEMP_FILES}/id_rsa'):
+@task(help={'node-num': "Node number of HOSTS list", 'hadoop': 'Use Hadoop user instead of pi user to login', 'private-key': "Path to private key"})
+def ssh_connect(ctx, node_num, hadoop=False, private_key=DEFAULT_SSHKEY):
     """
-    Connect to specific node using ssh private key 
-    """    
-    private_key = expanduser(private_key) # expand ~ to actual route
+    Connect to specific node using ssh private key (make sure you've generated the key)
+    1. Pi: ssh-config
+    2. Hadoop: install-hadoop
+    """
+    if hadoop:
+        user = HADOOP_USER
+        private_key=f'{TEMP_FILES}/hadoopSSH/id_rsa'
+    else:
+        user = USER
+        if private_key != DEFAULT_SSHKEY:
+            private_key = expanduser(private_key) # expand ~ to actual route
+        
     if not os.path.isfile(private_key):
         print("Can't find private key at", private_key)
     else:
-        print('ssh -i %s %s' % (private_key, getHosts(mode=CONN_MODE)[int(node_num)]))
-        os.system('ssh -i %s %s' % (private_key, getHosts(mode=CONN_MODE)[int(node_num)]))
+        if int(node_num) > NUM_NODES or int(node_num) < 0:
+            print('No such node')
+            node_ls(ctx)
+            return
+        print('ssh -i %s %s' % (private_key, getHosts(user=user, mode=CONN_MODE)[int(node_num)]))
+        os.system('ssh -i %s %s' % (private_key, getHosts(user=user, mode=CONN_MODE)[int(node_num)]))
 
 @task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
 def append_line(ctx, line_content, remote_file_path, override=False, verbose=False):
@@ -249,8 +284,9 @@ def find_and_replace(ctx, match, replace, remote_file_path, verbose=False):
 @task(help={'uncommit': 'Uncommit deb-src line in Raspbian (testing phase)'})
 def update_and_upgrade(ctx, uncommit=False):
     """
-    apt-update and apt-upgrade (this may take a while)
+    apt-update and apt-upgrade
     """
+    print("Updating... (this may take a while)")
     # Raspbian /etc/apt/sources.list
     UNCOMMENT_URL = r"deb-src http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi"
     if uncommit:
@@ -258,6 +294,19 @@ def update_and_upgrade(ctx, uncommit=False):
         print("Uncommit deb-src in", sources_list)
         comment_line(ctx, UNCOMMENT_URL, sources_list, uncomment=True, verbose=True)
     CMD_parallel(ctx, 'sudo apt-get update -y && sudo apt-get upgrade -y')
+
+@task
+def env_setup(ctx):
+    """
+    Environment setup
+    """
+    to_install = ['git', 'vim', 'tmux']
+    for connection in PiGroup:
+        if connection.run('which java', warn=True).failed: # Java
+            to_install.append('oracle-java8-jdk')
+
+        print("Install %s" %(' '.join(to_install)))
+        connection.sudo('sudo apt-get -y install %s' % (' '.join(to_install)))
 
 ### Quick Setup
 
@@ -347,13 +396,19 @@ def change_passwd(ctx, user, old=False):
 
 ### Hadoop
 
-@task
-def download_hadoop(ctx):
+## Hadoop Setup
+
+@task(help={'src': 'Download source version instead of binary version'})
+def download_hadoop(ctx, src=False):
     """
     Download specific version of Hadoop to ./temp_files
     """
-    print('Downloading to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
-    os.system(f'wget {HADOOP_MIRROR} -P {TEMP_FILES}')
+    if src:
+        print('Downloading source version to', os.path.join(TEMP_FILES, HADOOP_SRC_TARFILE))
+        os.system(f'wget {HADOOP_REMOTE_SRC_TAR} -P {TEMP_FILES}')
+    else:
+        print('Downloading binary version to', os.path.join(TEMP_FILES, HADOOP_TARFILE))
+        os.system(f'wget {HADOOP_REMOTE_TAR} -P {TEMP_FILES}')
 
 @task(help={'filefolder': "Folder with all the configuration files", 'verbose': "Verbose output"})
 def update_hadoop_conf(ctx, filesfolder=FILE_PATH, verbose=False):
@@ -373,11 +428,18 @@ def update_hadoop_conf(ctx, filesfolder=FILE_PATH, verbose=False):
 def install_hadoop(ctx, verbose=False):
     """
     Auto Setup Hadoop
+    0. Download hadoop
     1. Add hadoop user and group
     2. Generate ssh key for hadoop user
     3. Upload tar file, extract it and change owner to hadoop group and user
-    4. Setup environment variable in /etc/bash.bashrc
+    4. Setup environment variable in /etc/bash.bashrc and in hadoop-env.sh
+    5. Upload configuration file
+    6. Format HDFS (will ask you if you have formatted)
     """
+    # Check and download hadoop
+    os.system(f'mkdir -p {TEMP_FILES}') # Generate in local
+    if not os.path.isfile(f'{TEMP_FILES}/{HADOOP_TARFILE}'):
+        download_hadoop(ctx, src=False)
 
     # Hadoop user create password responser
     """
@@ -430,20 +492,19 @@ def install_hadoop(ctx, verbose=False):
         print(f"Generating hadoop key in {TEMP_FILES}/hadoopSSH")
         os.system(f'ssh-keygen -t rsa -P "" -f {TEMP_FILES}/hadoopSSH/id_rsa')
         os.system(f'cat {TEMP_FILES}/hadoopSSH/id_rsa.pub > {TEMP_FILES}/hadoopSSH/authorized_keys')
+    else:
+        print("Hadoop ssh key already generated")
 
     print("Uploading keys to remote")
-    for node_num in range(NUM_NODES):
-        connection = connect(node_num, user=HADOOP_USER, password=HADOOP_PASSWORD)
+    for connection in PiGroup:
+        connection.sudo(f'sudo mkdir -p /home/{HADOOP_USER}/.ssh && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /home/{HADOOP_USER}/.ssh')
         # Remove remote ssh key (make sure it's the same version)
-        try:
-            connection.run('rm .ssh/id_rsa* .ssh/authorized_keys', hide=True)
-        except:
-            pass
-        connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa', remote=f'/home/{HADOOP_USER}/.ssh')
-        connection.put(f'{TEMP_FILES}/hadoopSSH/id_rsa.pub', remote=f'/home/{HADOOP_USER}/.ssh')
-        connection.put(f'{TEMP_FILES}/hadoopSSH/authorized_keys', remote=f'/home/{HADOOP_USER}/.ssh')
+        connection.sudo(f'sudo rm /home/{HADOOP_USER}/.ssh/id_rsa* /home/{HADOOP_USER}/.ssh/authorized_keys', warn=True, hide=True)
+    uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/id_rsa', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
+    uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/id_rsa.pub', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
+    uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/authorized_keys', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
 
-    print("====== Upload", HADOOP_TARFILE, "======")
+    print("\n\n====== Upload", HADOOP_TARFILE, "======")
     for connection in PiGroup:
         print("Connect to", connection)
         if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:
@@ -485,12 +546,15 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
             print("Hadoop version:")
             connection.run('hadoop version')
 
-    # JAVA_HOME
+    # Set hadoop-env.sh
     hadoop_env_file = f'{HADOOP_INSTALL}/etc/hadoop/hadoop-env.sh'
     print("Setting", hadoop_env_file)
+    # JAVA_HOME
     comment_line(ctx, 'export JAVA_HOME=', hadoop_env_file, uncomment=True)
     find_and_replace(ctx, r'^export JAVA_HOME=.*', r'export JAVA_HOME=\$\(readlink -f \/usr\/bin\/java \| sed "s:bin\/java::"\)', hadoop_env_file)
-    # HADOOP_HEAPSIZE <- Don't know if it's needed yet.
+    # HADOOP_HEAPSIZE_MAX
+    #comment_line(ctx, 'export HADOOP_HEAPSIZE_MAX=', hadoop_env_file, uncomment=True)
+    #find_and_replace(ctx, r'^export HADOOP_HEAPSIZE_MAX=.*', 'export HADOOP_HEAPSIZE_MAX=256', hadoop_env_file)
 
     print("\n\n====== Copy configure files ======")
     update_hadoop_conf(ctx)
