@@ -579,3 +579,105 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
     #)
     # I just leave user to select Y or N in case of accidentally reformat it
     HadoopGroup.run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format') # Use hadoop user to login
+
+## Hadoop Utility Functions
+
+@task
+def start_hadoop(ctx):
+    """
+    Start Hadoop
+    """
+    # Just run on master node
+    print("Starting dfs...")
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/start-dfs.sh')
+    print("Starting yarn...")
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/start-yarn.sh')
+    print("List of JVM")
+    CMD_parallel(ctx, 'jps', hadoop=True, verbose=True)
+
+@task
+def stop_hadoop(ctx):
+    """
+    Stop Hadoop
+    """
+    # Just run on master node
+    print("Stopping dfs...")
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/stop-dfs.sh')
+    print("Stopping yarn...")
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/stop-yarn.sh')
+    print("List of JVM")
+    CMD_parallel(ctx, 'jps', hadoop=True, verbose=True)
+
+@task
+def restart_hadoop(ctx):
+    """
+    Restart Hadoop
+    """
+    stop_hadoop(ctx)
+    start_hadoop(ctx)
+
+@task
+def example_hadoop(ctx):
+    """
+    Select a classic hadoop example to run
+    """
+
+    resultDir = f'/home/{HADOOP_USER}/hadoop_result'
+    uploadDir = f'/home/{HADOOP_USER}/to_be_processed'
+
+    def PI_example(num_maps=16, samples=1000):
+        # Number of Maps  = 16
+        # Samples per Map = 1000
+        HadoopGroup[0].run('%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-%s.jar pi %d %d' % (HADOOP_INSTALL, HADOOP_INSTALL, HADOOP_VERSION, num_maps, samples))
+
+    def Wordcount_example():
+        local = input('Use local file or Hadoop license?\n\t1. Local file\n\t2. Hadoop license\n\n1 or 2: ')
+        if local == '2':
+            HadoopGroup[0].run('mkdir -p %s' % resultDir)
+            try:
+                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm /license.txt /license-out')
+                HadoopGroup[0].run('rm -r %s/license-out' % resultDir)
+            except:
+                pass
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {HADOOP_INSTALL}/LICENSE.txt /license.txt')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -ls /')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount /license.txt /license-out')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyToLocal /license-out {resultDir}/license-out')
+            print("Result:")
+            #HadoopGroup[0].run(f'cat {resultDir}/license-out/part-r-00000') # print entire result may be too long to display
+            HadoopGroup[0].run(f'head {resultDir}/license-out/part-r-00000')
+            print("\n...\n")
+            HadoopGroup[0].run(f'tail {resultDir}/license-out/part-r-00000')
+        else:
+            location = input('Where is your file? (file location): ')
+            filename = os.path.basename(location)
+            HadoopGroup[0].run('mkdir -p %s' % uploadDir)
+            uploadfile(ctx, location, destination=os.path.join(uploadDir, filename), permission=True, verbose=True)
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {uploadDir}/{filename} /{filename}-in')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -ls /')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount /{filename}-in /{filename}-out')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyToLocal /{filename}-out {resultDir}/{filename}-out')
+            print("Result:")
+            HadoopGroup[0].run(f'head {resultDir}/{filename}-out/part-r-00000')
+            print("\n...\n")
+            HadoopGroup[0].run(f'tail {resultDir}/{filename}-out/part-r-00000')
+            clean = input('Clean up? (Y/n): ')
+            if clean not in ('n', 'N'):
+                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm /{filename}-in /{filename}-out')
+                HadoopGroup[0].run('rm -r %s/%s-out' % (resultDir, filename))
+
+    def default():
+        print('No this option.')
+
+    def select(index):
+        return {
+            1: PI_example,
+            2: Wordcount_example
+        }.get(index, default)
+    
+    selection = """
+                \r1. PI
+                \r2. Wordcount
+                \n"""
+    example = int(input(selection + 'Selection: '))
+    select(example)()
