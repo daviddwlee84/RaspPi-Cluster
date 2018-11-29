@@ -9,7 +9,7 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ## Usage
 
-[**Usage in Detail !!**](FabfileHelp.md)
+[**Usage in Detail !!**](FabfileHelp.md) (Manual)
 
 ### Quick Start
 
@@ -19,7 +19,7 @@ First check user setting in [fabfile.py](fabfile.py) (Important!)
 
 ```sh
 fab update-and-upgrade # Make apt-get up to date
-fab env_setup # Quick install basic utility function
+fab env-setup # Quick install basic utility function
 fab set-hostname # Set hostname for each node (will need to reboot)
 fab ssh-config # Generate ssh-key and setup to all nodes
 fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)

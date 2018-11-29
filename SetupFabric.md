@@ -2,7 +2,7 @@
 
 A simple getting started guide of composing fabfile.
 
-[fabfile.py](Old/fabfile.py)
+[fabfile.py](FabricBasic/fabfile.py)
 
 ## Installation
 
