@@ -33,4 +33,40 @@
         <name>mapreduce.reduce.env</name>
         <value>HADOOP_MAPRED_HOME=/opt/hadoop-3.1.1</value>
     </property>
+    <property>
+        <name>mapred.job.tracker</name>
+        <value>master.local:54311</value>
+    </property>
+    <property>
+        <name>mapred.tasktracker.map.tasks.maximum</name>
+        <value>2</value>
+    </property>
+    <property>
+        <name>mapred.tasktracker.reduce.tasks.maximum</name>
+        <value>2</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.address</name>
+        <value>master.local:10020</value>
+    </property>
+    <property>
+        <name>mapreduce.jobhistory.webapp.address</name>
+        <value>master.local:19888</value>
+    </property>
+    <property>
+        <name>mapreduce.map.memory.mb</name>
+        <value>256</value>
+    </property>
+    <property>
+        <name>mapreduce.reduce.memory.mb</name>
+        <value>256</value>
+    </property>
+    <property>
+        <name>mapreduce.map.java.opts</name>
+        <value>-Xmx200m</value>
+    </property>
+    <property>
+        <name>mapreduce.reduce.java.opts</name>
+        <value>-Xmx200m</value>
+    </property>
 </configuration>

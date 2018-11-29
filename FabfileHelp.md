@@ -132,13 +132,16 @@ fab uploadfile README.md -d=/etc -p
 Default using [pre-generate key](#Generate-ssh-key). Or you can specific your own key if you have already set it.
 
 ```txt
-fab --help ssh-connect
+$ fab --help ssh-connect
 Usage: fab [--core-opts] ssh-connect [--options] [other tasks here ...]
 
 Docstring:
-  Connect to specific node using ssh private key
+  Connect to specific node using ssh private key (make sure you've generated them)
+  1. Pi: ssh-config
+  2. Hadoop: install-hadoop
 
 Options:
+  -h, --hadoop                      Use Hadoop user instead of pi user to login
   -n STRING, --node-num=STRING      Node number of HOSTS list
   -p STRING, --private-key=STRING   Path to private key
 ```
@@ -155,6 +158,12 @@ use your own key
 
 ```sh
 fab ssh-connect 0 -p=~/.ssh/id_rsa
+```
+
+use hadoop user to login (after `fab install-hadoop`)
+
+```sh
+fab ssh-connect 0 -h
 ```
 
 ### Utility Funcitons
@@ -256,6 +265,12 @@ Options:
   -u, --uncommit   Uncommit deb-src line in Raspbian (testing phase)
 ```
 
+#### Install some basic packages
+
+```sh
+fab env_setup
+```
+
 ## Quick Setup
 
 ### Generate ssh key
@@ -320,6 +335,7 @@ What password do you want to set?
 You should first setup some configure in [fabfile.py](fabfile.py).
 
 * HADOOP_VERSION: default 3.1.1
+* HADOOP_MIRROR: to fit your country
 
 ### Download Hadoop to local
 
@@ -331,4 +347,16 @@ fab download-hadoop
 
 ```sh
 fab install-hadoop
+```
+
+### Update Hadoop configure files
+
+```sh
+fab update-hadoop-conf
+```
+
+### Fix Hadoop library
+
+```sh
+fab fix-hadoop-lib
 ```

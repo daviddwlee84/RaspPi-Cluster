@@ -323,6 +323,14 @@ def set_hostname(ctx):
         connection = connect(node_num, conn_mode=connection_mode.IP)
         # Modify /etc/hostname
         connection.sudo('echo "%s" | sudo tee /etc/hostname' % hostname)
+        # Modify /etc/hosts
+        connection.sudo("sudo sed -i 's/%s/%s/' %s" % (r'127.0.1.1\s*\t*.*', '127.0.1.1\t%s' % hostname, '/etc/hosts'))
+        print("Results:")
+        print("/etc/hostname:")
+        connection.run('cat /etc/hostname')
+        print("/etc/hosts:")
+        connection.run('cat /etc/hosts')
+        
     # Reboot
     print("Rebooting...")
     try:
@@ -497,12 +505,13 @@ def install_hadoop(ctx, verbose=False):
 
     print("Uploading keys to remote")
     for connection in PiGroup:
-        connection.sudo(f'sudo mkdir -p /home/{HADOOP_USER}/.ssh && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /home/{HADOOP_USER}/.ssh')
+        connection.sudo(f'sudo mkdir -p /home/{HADOOP_USER}/.ssh')
         # Remove remote ssh key (make sure it's the same version)
         connection.sudo(f'sudo rm /home/{HADOOP_USER}/.ssh/id_rsa* /home/{HADOOP_USER}/.ssh/authorized_keys', warn=True, hide=True)
     uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/id_rsa', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
     uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/id_rsa.pub', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
     uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/authorized_keys', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
+    CMD_parallel(ctx, f'sudo chown {HADOOP_USER}:{HADOOP_GROUP} /home/{HADOOP_USER}/.ssh -R')
 
     print("\n\n====== Upload", HADOOP_TARFILE, "======")
     for connection in PiGroup:
@@ -521,12 +530,14 @@ def install_hadoop(ctx, verbose=False):
 
     print("\n\n====== Setup environment variable ======")
     bashrc_location = '/etc/bash.bashrc'
+    # use '# Hadoop Settings' as flag
     bashrc_setting = f'''
 # Hadoop Settings
 export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")
 export HADOOP_HOME={HADOOP_INSTALL}
 export HADOOP_INSTALL=$HADOOP_HOME
 export YARN_HOME=$HADOOP_HOME
+export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 export PATH=$PATH:$HADOOP_INSTALL/bin
 '''
     for connection in PiGroup:
@@ -553,8 +564,8 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
     comment_line(ctx, 'export JAVA_HOME=', hadoop_env_file, uncomment=True)
     find_and_replace(ctx, r'^export JAVA_HOME=.*', r'export JAVA_HOME=\$\(readlink -f \/usr\/bin\/java \| sed "s:bin\/java::"\)', hadoop_env_file)
     # HADOOP_HEAPSIZE_MAX
-    #comment_line(ctx, 'export HADOOP_HEAPSIZE_MAX=', hadoop_env_file, uncomment=True)
-    #find_and_replace(ctx, r'^export HADOOP_HEAPSIZE_MAX=.*', 'export HADOOP_HEAPSIZE_MAX=256', hadoop_env_file)
+    comment_line(ctx, 'export HADOOP_HEAPSIZE_MAX=', hadoop_env_file, uncomment=True)
+    find_and_replace(ctx, r'^export HADOOP_HEAPSIZE_MAX=.*', 'export HADOOP_HEAPSIZE_MAX=256', hadoop_env_file)
 
     print("\n\n====== Copy configure files ======")
     update_hadoop_conf(ctx)
@@ -563,9 +574,9 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
     print("\n\n====== HDFS ======")
 
     print("Creating HDFS directories...")
-    HadoopGroup.run(f'sudo mkdir -p -m 0750 /hadoop/tmp && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/tmp')
-    HadoopGroup.run(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
-    HadoopGroup.run(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
+    PiGroup.run(f'sudo mkdir -p -m 0750 /hadoop/tmp && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/tmp')
+    PiGroup.run(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
+    PiGroup.run(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
 
     print("Formating HDFS...")
     """
@@ -580,6 +591,85 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
     # I just leave user to select Y or N in case of accidentally reformat it
     HadoopGroup.run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format') # Use hadoop user to login
 
+@task(help={'location': "Location of Hadoop source folder", 'build-protobuf': "Build Protocol Buffers from github source code"})
+def build_hadoop(ctx, location=HADOOP_BUILD, build_protobuf=False):
+    """
+    Build Hadoop source
+    (Test phase don't use it now)
+    Method 1. make install protobuf (current version)
+    Method 2. set HADOOP_PROTOC_PATH and JAVA_HOME and build (haven't script yet)
+    """
+    print("Install build tools...")
+    HadoopGroup.run('sudo apt-get install -y maven libssl-dev build-essential pkgconf cmake')
+
+    if build_protobuf:
+        print("Install protobuf building tools...")
+        HadoopGroup.run('sudo apt-get install -y autoconf automake libtool curl make g++ unzip')
+        # 3.6.X... Too new it don't support
+        #print("Clone and build protobuf binary...")
+        #HadoopGroup.run('git clone https://github.com/protocolbuffers/protobuf.git')
+        #HadoopGroup.run('cd protobuf && git submodule update --init --recursive && ./autogen.sh')
+        #HadoopGroup.run('cd protobuf && ./configure --prefix=/usr && make && make check && sudo make install && sudo ldconfig')
+        print("Download and build protobuf v2.5.0...")
+        HadoopGroup.run('wget https://github.com/protocolbuffers/protobuf/releases/download/v2.5.0/protobuf-2.5.0.tar.gz')
+        HadoopGroup.run('tar xzf protobuf-2.5.0.tar.gz')
+        HadoopGroup.run('cd protobuf-2.5.0 && ./configure && make && sudo make install') # skip make check
+    else:
+        print("Install protobuf...")
+        HadoopGroup.run('sudo apt-get install -y libprotobuf10 protobuf-compiler')
+
+    print("Building Hadoop... (this may take a while)")
+    HadoopGroup.run('cd %s && mvn package -Pdist,native -DskipTests -Dtar' % location)
+
+@task(help={'clean': "Clean tar and build folder when it's finished"})
+def fix_hadoop_lib(ctx, clean=False):
+    """
+    Fix the Java HotSpot(TM) Client VM warning of libhadoop.so.1.0.0 by building it from source file
+    (Test phase don't use it now)
+    """
+    print("====== Upload", HADOOP_SRC_TARFILE, "======")
+    for connection in PiGroup:
+        print("Connect to", connection)
+        if connection.run('test -d %s' % HADOOP_INSTALL, warn=True).failed:
+            print("Did not find %s, uploading %s..." % (HADOOP_INSTALL, HADOOP_SRC_TARFILE))
+            connection.put(os.path.join(TEMP_FILES, HADOOP_SRC_TARFILE), remote=REMOTE_UPLOAD)
+            print("Extracting tar file...")
+            connection.sudo('tar zxf %s -C %s' % (os.path.join(REMOTE_UPLOAD, HADOOP_SRC_TARFILE), f'/home/{HADOOP_USER}'))
+
+            build_hadoop(ctx, HADOOP_BUILD)
+
+            if clean:
+                print("Clean up tar file...")
+                connection.run('rm %s' % os.path.join(REMOTE_UPLOAD, HADOOP_SRC_TARFILE))
+        else:
+            print('Found %s, skip to next node' % HADOOP_INSTALL)
+
+    print("\n\n====== Copy native library ======")
+    HadoopGroup.run(f'mkdir -p {HADOOP_INSTALL}/hadoop-{HADOOP_VERSION}/lib/build')
+    HadoopGroup.run(f'cp -r {HADOOP_BUILD}/hadoop-{HADOOP_VERSION}-src/lib/* {HADOOP_INSTALL}/hadoop-{HADOOP_VERSION}/lib/build/') ### here here here
+    if clean:
+        print("Clean up build file...")
+        connection.run(f'rm -r {HADOOP_BUILD}')
+
+    print("\n\n====== Configure environment variable ======")
+    bashrc_location = '/etc/bash.bashrc' # here here here
+    bashrc_setting = f'''
+# Hadoop Lib Settings
+export HADOOP_COMMON_LIB_NATIVE_DIR="{HADOOP_INSTALL}/lib/build"
+export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path={HADOOP_INSTALL}/lib/build"
+'''
+    for connection in PiGroup:
+        print("Setting", connection)
+        if connection.run("grep -Fxq '%s' %s" % ("# Hadoop Lib Settings", bashrc_location), warn=True).failed:
+            print('No previous settings, append settings...')
+            append_line(ctx, bashrc_setting, bashrc_location)
+            print('Tail of %s:' % bashrc_location)
+            connection.run("tail -n 8 %s" % bashrc_location) # check the settings
+            print('Applying changes...')
+            connection.run('source %s' % bashrc_location) # apply changes
+        else:
+            print('Setting already exist')
+
 ## Hadoop Utility Functions
 
 @task
@@ -592,6 +682,9 @@ def start_hadoop(ctx):
     HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/start-dfs.sh')
     print("Starting yarn...")
     HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/start-yarn.sh')
+    print("Starting jobhistory...")
+    # $HADOOP_HOME/sbin/mr-jobhistory-daemon.sh has been deprecated
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/mapred --daemon start historyserver')
     print("List of JVM")
     CMD_parallel(ctx, 'jps', hadoop=True, verbose=True)
 
@@ -605,6 +698,8 @@ def stop_hadoop(ctx):
     HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/stop-dfs.sh')
     print("Stopping yarn...")
     HadoopGroup[0].run(f'{HADOOP_INSTALL}/sbin/stop-yarn.sh')
+    print("Stopping jobhistory...")
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/mapred --daemon stop historyserver')
     print("List of JVM")
     CMD_parallel(ctx, 'jps', hadoop=True, verbose=True)
 
@@ -625,9 +720,18 @@ def example_hadoop(ctx):
     resultDir = f'/home/{HADOOP_USER}/hadoop_result'
     uploadDir = f'/home/{HADOOP_USER}/to_be_processed'
 
-    def PI_example(num_maps=16, samples=1000):
-        # Number of Maps  = 16
-        # Samples per Map = 1000
+    def PI_example():
+        # Current test
+        # 16, 1000 will failed at 100% map 100% reduce.
+        # 2, 2 will work.
+        # 10, 10 will get the same warning as 16, 1000 but will work.
+        # Guessing it's the resource limit problem
+        # But I've set up HADOOP_HEAPSIZE_MAX to be 256MB in hadoop-env.sh
+        # And other more stuff in mapred-site.xml
+        num_maps = input('Number of Maps (default 16): ')
+        num_maps = 16 if not num_maps else int(num_maps)
+        samples = input('Samples per Map (default 1000): ')
+        samples = 1000 if not samples else int(samples)
         HadoopGroup[0].run('%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-%s.jar pi %d %d' % (HADOOP_INSTALL, HADOOP_INSTALL, HADOOP_VERSION, num_maps, samples))
 
     def Wordcount_example():
@@ -681,3 +785,7 @@ def example_hadoop(ctx):
                 \n"""
     example = int(input(selection + 'Selection: '))
     select(example)()
+
+@task
+def hadoop_streaming(ctx, mapper, reducer, **kargs):
+    pass

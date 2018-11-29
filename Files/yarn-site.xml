@@ -23,7 +23,42 @@
         <value>master.local</value>
     </property>
     <property>
-        <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
+        <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
+        <!-- <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name> -->
         <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+    </property>
+
+    <property>
+        <name>yarn.nm.liveness-monitor.expiry-interval-ms</name>
+        <value>120000</value> <!-- 2 minutes -->
+    </property>
+    <property>
+        <name>yarn.resourcemanager.nodemanager-connect-retries</name>
+        <value>5</value>
+    </property>
+
+    <property>
+        <name>yarn.nodemanager.resource.cpu-vcores</name>
+        <value>4</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.resource.memory-mb</name>
+        <value>1024</value>
+    </property>
+    <property>
+        <name>yarn.app.mapreduce.am.resource.mb</name>
+        <value>512</value>
+    </property>
+    <property>
+        <name>yarn.scheduler.minimum-allocation-mb</name>
+        <value>256</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.vmem-check-enabled</name>
+        <value>false</value>
+    </property>
+    <property>
+        <name>yarn.nodemanager.vmem-pmem-ratio</name>
+        <value>4</value>
     </property>
 </configuration>

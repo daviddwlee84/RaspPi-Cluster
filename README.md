@@ -18,9 +18,17 @@ First check user setting in [fabfile.py](fabfile.py) (Important!)
 #### Quick Setup
 
 ```sh
+fab update-and-upgrade # Make apt-get up to date
+fab env_setup # Quick install basic utility function
 fab set-hostname # Set hostname for each node (will need to reboot)
 fab ssh-config # Generate ssh-key and setup to all nodes
 fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)
+```
+
+Regular used function
+
+```sh
+fab ssh-connect NODE_NUM # Connect to any node by it's index without password after you've generated ssh-key (use -h flag to be hadoop user)
 ```
 
 #### Hadoop
@@ -28,9 +36,19 @@ fab change-passwd # Change password for more security (Remember also change in f
 If you changed default hostname in fabfile.py. Make sure you also change in hadoop configuraiton file in ./Files.
 
 ```sh
-fab download-hadoop # Download hadoop tar from mirror
-fab install-hadoop # An one button setup for hadoop environment on all nodes
+fab install-hadoop # An one button setup for hadoop environment on all nodes!!!
+
 fab update-hadoop-conf # Every time you update configure file in local you can update it to all nodes at once
+```
+
+Utility function
+
+```sh
+fab start-hadoop
+fab restart-hadoop
+fab stop-hadoop
+
+fab example-hadoop # If everything is done. You can play around with some hadoop official example
 ```
 
 ## Example
@@ -55,7 +73,7 @@ A step by step record of how I build this system.
 3. [Setup fabric (brief notes)](SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
     * I've built some utility function first and then move on setup Hadoop
     * when any general purpose manipulation needed I'll add it.
-4. [Setup Hadoop](SetupHadoop.md) <- still working on it
+4. [Setup Hadoop](SetupHadoop.md)
 
 ## Notes about distributed computing
 
@@ -72,6 +90,13 @@ Algorithm
 Spark
 
 Kubernetes
+
+## TODO
+
+* Expand to support any other Debian/Unix system
+* Better switch between multiple configuration files for multi-server
+* More friendly Document
+* Hadoop utility function introduction
 
 ## Links
 

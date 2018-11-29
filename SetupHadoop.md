@@ -6,6 +6,9 @@
 
 We first download Hadoop from official website to `temp_files/`
 
+* [Hadoop releases](https://hadoop.apache.org/releases.html#Download)
+* [Apache Hadoop 3.1.1 Mirror](https://www.apache.org/dyn/closer.cgi/hadoop/common/hadoop-3.1.1/hadoop-3.1.1.tar.gz)
+
 ```sh
 fab download-hadoop
 ```
@@ -59,7 +62,12 @@ fab install-hadoop
 
 ### Update hadoop configuration
 
-Use update-hadoop-conf
+Use [update-hadoop-conf](#Update-hadoop-configuration-files)
+
+## Setup HDFS
+
+1. Make directories and change their owner
+2. Format HDFS namenode
 
 ## Update hadoop configuration files
 
@@ -74,13 +82,107 @@ Update these files to the remotes: (will overwrite the original content)
 fab update-hadoop-conf
 ```
 
-## Setup HDFS
+## Fix native library error
 
-1. Make directories and change their owner
-2. Format HDFS namenode
+(use `-c` flag to clean up tar and build file when it's finished)
+
+```sh
+fab fix-hadoop-lib
+```
+
+> THIS METHOD IS STILL IN TEST PHASE
 
 ## TODO
 
 * fix IP (maybe)
 * make another .md about how to configure hadooop configure file
     * node number dynamic config (hostname or something else)
+
+## Trouble Shooting
+
+### Fix library (Cannot allocate memory)
+
+**Preface**: I've test my hadoop by official example. But I can't finish the calculate-PI example even it reach 100% map 100% reduce. But I can successful running wordcount. It's wierd. So I tried to solve the library problem see if these can solve it.
+
+```txt
+Java HotSpot(TM) Client VM warning: You have loaded library /opt/hadoop-3.1.1/lib/native/libhadoop.so.1.0.0 which might have disabled stack guard. The VM will try to fix the stack guard now.
+It's highly recommended that you fix the library with 'execstack -c <libfile>', or link it with '-z noexecstack'.
+Java HotSpot(TM) Client VM warning: INFO: os::commit_memory(0x52600000, 104861696, 0) failed; error='Cannot allocate memory' (errno=12)
+```
+
+```sh
+# I've tried to fix it by execstack but it doesn't work
+sudo apt-get install execstack
+sudo execstack -c /opt/hadoop-3.1.1/lib/native/libhadoop.so.1.0.0
+```
+
+```sh
+# Some other said that they can fix it by adding these two environment variable in hadoop-env.sh but still doesn't work
+export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path=$HADOOP_HOME/lib/"
+export HADOOP_COMMON_LIB_NATIVE_DIR="$HADOOP_HOME/lib/native/"
+```
+
+* [Compile Apache Hadoop on Linux (fix warning: Unable to load native-hadoop library)](http://www.ercoppa.org/posts/how-to-compile-apache-hadoop-on-ubuntu-linux.html) - Steps
+* [Hadoop “Unable to load native-hadoop library for your platform” warning](https://stackoverflow.com/questions/19943766/hadoop-unable-to-load-native-hadoop-library-for-your-platform-warning) - Reason explain
+    * By default the library in binary version hadoop is built for 32-bit.
+    * Check if the *.so file is readable `ldd libhadoop.so.1.0.0`
+* [Building Native Hadoop Libraries to Fix VM Stack Guard error on 64 bit machine](https://kuntalganguly.blogspot.com/2014/07/building-native-hadoop-libraries-to-fix.html) - Steps but a little outdated
+
+```sh
+# Get hadoop build tools
+sudo apt-get install maven libssl-dev build-essential pkgconf cmake
+# Get protobuf build tools
+sudo apt-get install -y autoconf automake libtool curl make g++ unzip
+```
+
+> I've tried to install libprotobuf10(latest version) and protobuf-compiler by apt-get but it get the error...
+> (libprotobuf8 didn't found)
+
+```txt
+[ERROR] Failed to execute goal org.apache.hadoop:hadoop-maven-plugins:3.1.1:protoc (compile-protoc) on project hadoop-common: org.apache.maven.plugin.MojoExecutionException: protoc version is 'libprotoc 3.0.0', expected version is '2.5.0'
+```
+
+**Build Protocol Buffers**: It has to be v2.5.0
+
+> Follow [Official C++ Installation of Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/master/src/README.md). Build protobuf from binary. (This won't work because the version is too new)
+
+Download binary version of Protocol Buffer v2.5.0 - [Github release page](https://github.com/protocolbuffers/protobuf/releases/tag/v2.5.0)
+
+1. Method 1
+
+Haven't success yet
+
+```sh
+./configure
+make
+sudo make install
+# Now it should be able to build hadoop without error
+mvn package -Pdist,native -DskipTests -Dtar
+```
+
+2. Method 2
+
+Haven't success yet
+
+```sh
+./configure
+make
+cd hadoop-src-3.1.1/hadoop-common-project/hadoop-common
+export HADOOP_PROTOC_PATH=/path/to/protobuf-2.5.0/src/protoc
+export JAVA_HOME=/usr/lib/jvm/jdk-8-oracle-arm32-vfp-hflt # without /jre
+mvn compile -Pnative
+```
+
+> When it's finished, copy `lib` folder to wherever you like and remember to add environment variable in `hadoop-env.sh`.
+
+**THE FINAL SOLUTION**:
+
+Before this I'm trying to use the minimum settings among blablabla.xml files in order to observe the functionality and only add it when I needed.
+
+I think OS killed the map since it exceed the maxmum usage. So that's why I get the 'Cannot allocate memory' error.
+
+And now I found that. If hadoop said it can't use "stack grard" to protect memory usage, maybe I can limit it by myself.
+
+So I add some memory limitation configure in mapred-site.xml and yarn-site.xml. And it work perfect!!
+
+Thus I'm not going to get rid of the warning now. :P
