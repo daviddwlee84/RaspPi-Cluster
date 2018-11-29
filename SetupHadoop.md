@@ -61,11 +61,12 @@ fab install-hadoop
     * JAVA_HOME
     * HADOOP_HEAPSIZE_MAX
 
-### Setup slaves
+### Setup slaves (worker)
 
-1. Add slaves hostname address in $HADOOP_HOME/etc/hadoop/slaves
+1. Add master hostname address in $HADOOP_HOME/etc/hadoop/master
+2. Add slaves hostname address in $HADOOP_HOME/etc/hadoop/workers
 
-[Configure slaves ref](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#configure-slaves)
+> Ps. in Hadoop 2.x it is $HADOOP_HOME/etc/hadoop/slaves
 
 ### Update hadoop configuration
 
@@ -197,3 +198,5 @@ Thus I'm not going to get rid of the warning now. :P
 ([Configure Memory Allocation](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#configure-memory-allocation))
 
 [![The YARN Memory Allocation Properties](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/hadoop-2-memory-allocation-new.png)](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#the-memory-allocation-properties)
+
+([Determine HDP Memory Configuration Settings](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.3.0/bk_installing_manually_book/content/determine-hdp-memory-config.html))

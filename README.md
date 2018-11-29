@@ -117,3 +117,4 @@ Kubernetes
     * [Part 1: Setting up Raspberry Pi and network configurations](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-1-3b71f1b8ac4e#.6xuk426d2)
     * [Part 2: Hadoop single node setup, testing and prepping the cluster](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-2-b8ccfbe6ba9a#.rdymvh5zn)
     * [Part 3: Hadoop cluster setup, testing and final thoughts](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-3-7d114d35fdf1#.cn9da731k)
+* [Build a Hadoop 3 cluster with Raspberry Pi 3](https://medium.com/@oliver_hu/build-a-hadoop-3-cluster-with-raspberry-pi-3-f451b7f93254)

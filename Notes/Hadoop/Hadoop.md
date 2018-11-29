@@ -2,6 +2,14 @@
 
 ## Overview
 
+## Hadoop Architecture
+
+[![hdfs architecture](https://hadoop.apache.org/docs/r1.2.1/images/hdfsarchitecture.gif)](https://hadoop.apache.org/docs/r1.2.1/hdfs_design.html#NameNode+and+DataNodes)
+
+### NameNode
+
+### DataNodes
+
 ## Hadoop Streaming
 
 Hadoop provides a streaming API which supports any programming language that can read from the standard input *stdin* and write to the standard output *stdout*. The Hadoop streaming API uses standard Linux streams as the interface between Hadoop and the program.  Thus, input data is passed via the *stdin* to a map function, which processes it line by line and writes to the *stdout*.  Input to the reduce function is *stdin* (which is guaranteed to be sorted by key by Hadoop) and the results are output to *stdout*.

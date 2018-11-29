@@ -119,6 +119,30 @@ def connect(node_num, user=USER, password=PASSWORD, private_key_path=DEFAULT_SSH
     """
     return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password, 'key_filename': private_key_path}, config=configure)
 
+def questionAsk(questionDict, question=None):
+    """
+    dict {'selection description': 'function'}
+    """
+    if question:
+        print(question)
+
+    optionsNum = 1
+    questions = ''
+    selections = {}
+    for question, function in questionDict.items():
+        questions += str(optionsNum) + '. ' + question + '\n'
+        selections[optionsNum] = function
+        optionsNum += 1
+    
+    def default():
+        print('No this option.')
+
+    def select(numSelect):
+        return selections.get(numSelect, default)
+    
+    selection = int(input(questions + '\nSelection: '))
+    select(selection)()
+
 #############################
 
 ### General usage
@@ -406,6 +430,14 @@ def change_passwd(ctx, user, old=False):
         for connection in PiGroup:
             connection.sudo('sudo passwd %s' % user, pty=True, watchers=[newResponder])
 
+@task
+def install_dev_env(ctx):
+    """
+    Install the best development environment
+    (vim, oh-my-zsh, tmux and powerline theme)
+    """
+    pass
+
 ### Hadoop
 
 ## Hadoop Setup
@@ -446,9 +478,9 @@ def install_hadoop(ctx, verbose=False):
     2. Generate ssh key for hadoop user
     3. Upload tar file, extract it and change owner to hadoop group and user
     4. Setup environment variable in /etc/bash.bashrc and in hadoop-env.sh
-    5. Set slaves
+    5. Set master and slaves (workers)
     6. Upload configuration file
-    7. Format HDFS (will ask you if you have formatted)
+    7. Formating master HDFS as namenode (will ask you if you have formatted)
     """
     # Check and download hadoop
     os.system(f'mkdir -p {TEMP_FILES}') # Generate in local
@@ -573,17 +605,19 @@ export PATH=$PATH:$HADOOP_INSTALL/bin:$HADOOP_INSTALL/sbin
     comment_line(ctx, 'export HADOOP_HEAPSIZE_MAX=', hadoop_env_file, uncomment=True)
     find_and_replace(ctx, r'^export HADOOP_HEAPSIZE_MAX=.*', 'export HADOOP_HEAPSIZE_MAX=256', hadoop_env_file)
 
-    print("\n\n====== Set slaves ======")
-    slavesFile = f'{HADOOP_INSTALL}/etc/hadoop/slaves'
-    HadoopGroup.run('sudo echo "" > %s' % slavesFile)
+    print("\n\n====== Set master and slaves (workers) ======")
+    masterFile = f'{HADOOP_INSTALL}/etc/hadoop/master'
+    slavesFile = f'{HADOOP_INSTALL}/etc/hadoop/workers' # Hadoop 3.X
+    #slavesFile = f'{HADOOP_INSTALL}/etc/hadoop/slaves' # Hadoop 2.X
+    HadoopGroup.run('echo '' | tee %s %s' % (masterFile, slavesFile))
     for num_node, host in enumerate(HOSTNAMES):
-        host += '.local\n'
+        host += '.local'
         if num_node == 0:
             # master
-            pass
+            HadoopGroup.run('echo "%s" | tee -a %s' % (host, masterFile))
         else:
             # slaves
-            HadoopGroup.run('sudo echo "%s" > %s' % (host, slavesFile))
+            HadoopGroup.run('echo "%s" | tee -a %s' % (host, slavesFile))
 
     print("\n\n====== Copy configure files ======")
     update_hadoop_conf(ctx)
@@ -593,10 +627,22 @@ export PATH=$PATH:$HADOOP_INSTALL/bin:$HADOOP_INSTALL/sbin
 
     print("Creating HDFS directories...")
     PiGroup.run(f'sudo mkdir -p -m 0750 /hadoop/tmp && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/tmp')
-    PiGroup.run(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
-    PiGroup.run(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
+    if NUM_NODES == 1:
+        # If single node
+        # master is both datanode and namenode
+        PiGroup[0].sudo(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
+        PiGroup[0].sudo(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
+    else:
+        # If multiple node
+        # master => namenode
+        # slaves => datanode
+        for num_node, connection in enumerate(PiGroup):
+            if num_node == 0:
+                connection.sudo(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
+            else:
+                connection.sudo(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
 
-    print("Formating HDFS...")
+    print("Formating master HDFS as namenode...")
     """
     ...
     ...
@@ -607,7 +653,7 @@ export PATH=$PATH:$HADOOP_INSTALL/bin:$HADOOP_INSTALL/sbin
     #    response='Y\n',
     #)
     # I just leave user to select Y or N in case of accidentally reformat it
-    HadoopGroup.run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format') # Use hadoop user to login
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format')
 
 @task(help={'location': "Location of Hadoop source folder", 'build-protobuf': "Build Protocol Buffers from github source code"})
 def build_hadoop(ctx, location=HADOOP_BUILD, build_protobuf=False):
@@ -731,10 +777,23 @@ def restart_hadoop(ctx):
 
 @task
 def status_hadoop(ctx):
-    """
-    Monitor your HDFS Cluster
-    """
-    HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfsadmin -report')
+    # Monitor your HDFS Cluster
+    def status_hdfs():
+        HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfsadmin -report')
+
+    # Monitor YARN
+    def status_yarn():
+        def running_node():
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/yarn node -list')
+        def running_app():
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/yarn application -list')
+        questionAsk({'Report of running nodes': running_node,
+                     'Report of running applications': running_app},
+                     question="\n")
+
+    questionAsk({'Monitor HDFS': status_hdfs,
+                 'Monitor YARN': status_yarn},
+                 question="What do you want to monitor?")
 
 @task
 def example_hadoop(ctx):
@@ -795,22 +854,12 @@ def example_hadoop(ctx):
                 HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm /{filename}-in /{filename}-out')
                 HadoopGroup[0].run('rm -r %s/%s-out' % (resultDir, filename))
 
-    def default():
-        print('No this option.')
-
-    def select(index):
-        return {
-            1: PI_example,
-            2: Wordcount_example
-        }.get(index, default)
-    
-    selection = """
-                \r1. PI
-                \r2. Wordcount
-                \n"""
-    example = int(input(selection + 'Selection: '))
-    select(example)()
+    questionAsk({'PI': PI_example, 'Wordcount': Wordcount_example}, question="Select an Hadoop example")
 
 @task
 def hadoop_streaming(ctx, mapper, reducer, **kargs):
+    pass
+
+@task
+def upload_hdfs(ctx, file, name=None):
     pass
