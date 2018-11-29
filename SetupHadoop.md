@@ -57,8 +57,15 @@ fab install-hadoop
 
 1. Append setting in /etc/bash.bashrc
 2. Source it to apply setting
-3. Also configure in HADOOP_INSTALL/etc/hadoop/hadoop-env.sh
+3. Also configure in $HADOOP_HOME/etc/hadoop/hadoop-env.sh
     * JAVA_HOME
+    * HADOOP_HEAPSIZE_MAX
+
+### Setup slaves
+
+1. Add slaves hostname address in $HADOOP_HOME/etc/hadoop/slaves
+
+[Configure slaves ref](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#configure-slaves)
 
 ### Update hadoop configuration
 
@@ -186,3 +193,7 @@ And now I found that. If hadoop said it can't use "stack grard" to protect memor
 So I add some memory limitation configure in mapred-site.xml and yarn-site.xml. And it work perfect!!
 
 Thus I'm not going to get rid of the warning now. :P
+
+([Configure Memory Allocation](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#configure-memory-allocation))
+
+[![The YARN Memory Allocation Properties](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/hadoop-2-memory-allocation-new.png)](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#the-memory-allocation-properties)

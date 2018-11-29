@@ -32,9 +32,9 @@ NUM_NODES = 4
 # Host IP
 HOSTS_IP = [
     '192.168.1.109', # Master
-    '192.168.1.101',
-    '192.168.1.102',
-    '192.168.1.103',
+    '192.168.1.101', # Slave1
+    '192.168.1.102', # Slave2
+    '192.168.1.103', # Slave3
 ]
 
 # Hostname
@@ -245,16 +245,16 @@ def ssh_connect(ctx, node_num, hadoop=False, private_key=DEFAULT_SSHKEY):
         print('ssh -i %s %s' % (private_key, getHosts(user=user, mode=CONN_MODE)[int(node_num)]))
         os.system('ssh -i %s %s' % (private_key, getHosts(user=user, mode=CONN_MODE)[int(node_num)]))
 
-@task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
-def append_line(ctx, line_content, remote_file_path, override=False, verbose=False):
+@task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'hadoop': 'Use hadoop user', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
+def append_line(ctx, line_content, remote_file_path, hadoop=False, override=False, verbose=False):
     """
     Append (or Override) content in new line in a remote file.
     (prevent to use ' ' in your string or it may be ignore)
     """
     if override:
-        CMD_parallel(ctx, "echo '%s' | sudo tee %s" % (line_content, remote_file_path))
+        CMD_parallel(ctx, "echo '%s' | sudo tee %s" % (line_content, remote_file_path), hadoop=hadoop)
     else:
-        CMD_parallel(ctx, "echo '%s' | sudo tee -a %s" % (line_content, remote_file_path))
+        CMD_parallel(ctx, "echo '%s' | sudo tee -a %s" % (line_content, remote_file_path), hadoop=hadoop)
     if verbose:
         CMD_parallel(ctx, "cat %s" % remote_file_path, verbose=True)
 
@@ -354,6 +354,9 @@ def ssh_config(ctx):
             print('Already clean')
         # Generate ssh key
         os.system(f"ssh-keygen -t rsa -b 4096 -N '' -C 'cluster user key' -f {TEMP_FILES}/id_rsa")
+        newkeygen = True
+    else:
+        newkeygen = False
     
     # Upload ssh key
     CMD_parallel(ctx, 'mkdir -p -m 0700 .ssh')
@@ -365,7 +368,8 @@ def ssh_config(ctx):
         pubkey = pubkeyfile.read()
         for connection in PiGroup:
             connection.run('touch .ssh/authorized_keys')
-            if connection.run('grep -Fxq "%s" %s' % (pubkey, '.ssh/authorized_keys'), warn=True).failed:
+            # Somehow grep not work quite well
+            if newkeygen or connection.run('grep -Fxq "%s" %s' % (pubkey, '.ssh/authorized_keys'), warn=True).failed:
                 print('No such key, append')
                 connection.run('echo "%s" >> .ssh/authorized_keys' % pubkey)
             else:
@@ -431,6 +435,7 @@ def update_hadoop_conf(ctx, filesfolder=FILE_PATH, verbose=False):
         if verbose:
             print("Uploading", local, "to", destinaiton)
         uploadfile(ctx, local, destinaiton, permission=True)
+    PiGroup.run(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {HADOOP_INSTALL}/etc/hadoop')
 
 @task(help={'verbose': "More detail of setup checking"})
 def install_hadoop(ctx, verbose=False):
@@ -441,8 +446,9 @@ def install_hadoop(ctx, verbose=False):
     2. Generate ssh key for hadoop user
     3. Upload tar file, extract it and change owner to hadoop group and user
     4. Setup environment variable in /etc/bash.bashrc and in hadoop-env.sh
-    5. Upload configuration file
-    6. Format HDFS (will ask you if you have formatted)
+    5. Set slaves
+    6. Upload configuration file
+    7. Format HDFS (will ask you if you have formatted)
     """
     # Check and download hadoop
     os.system(f'mkdir -p {TEMP_FILES}') # Generate in local
@@ -538,7 +544,7 @@ export HADOOP_HOME={HADOOP_INSTALL}
 export HADOOP_INSTALL=$HADOOP_HOME
 export YARN_HOME=$HADOOP_HOME
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
-export PATH=$PATH:$HADOOP_INSTALL/bin
+export PATH=$PATH:$HADOOP_INSTALL/bin:$HADOOP_INSTALL/sbin
 '''
     for connection in PiGroup:
         print("Setting", connection)
@@ -566,6 +572,18 @@ export PATH=$PATH:$HADOOP_INSTALL/bin
     # HADOOP_HEAPSIZE_MAX
     comment_line(ctx, 'export HADOOP_HEAPSIZE_MAX=', hadoop_env_file, uncomment=True)
     find_and_replace(ctx, r'^export HADOOP_HEAPSIZE_MAX=.*', 'export HADOOP_HEAPSIZE_MAX=256', hadoop_env_file)
+
+    print("\n\n====== Set slaves ======")
+    slavesFile = f'{HADOOP_INSTALL}/etc/hadoop/slaves'
+    HadoopGroup.run('sudo echo "" > %s' % slavesFile)
+    for num_node, host in enumerate(HOSTNAMES):
+        host += '.local\n'
+        if num_node == 0:
+            # master
+            pass
+        else:
+            # slaves
+            HadoopGroup.run('sudo echo "%s" > %s' % (host, slavesFile))
 
     print("\n\n====== Copy configure files ======")
     update_hadoop_conf(ctx)
@@ -710,6 +728,13 @@ def restart_hadoop(ctx):
     """
     stop_hadoop(ctx)
     start_hadoop(ctx)
+
+@task
+def status_hadoop(ctx):
+    """
+    Monitor your HDFS Cluster
+    """
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfsadmin -report')
 
 @task
 def example_hadoop(ctx):
