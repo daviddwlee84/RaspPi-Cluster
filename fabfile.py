@@ -80,6 +80,7 @@ HADOOP_REMOTE_TAR = f'{HADOOP_MIRROR}/hadoop-{HADOOP_VERSION}/{HADOOP_TARFILE}'
 HADOOP_REMOTE_SRC_TAR = f'{HADOOP_MIRROR}/hadoop-{HADOOP_VERSION}/{HADOOP_SRC_TARFILE}'
 HADOOP_INSTALL = f'/opt/hadoop-{HADOOP_VERSION}' # i.e. $HADOOP_HOME
 HADOOP_BUILD = f'/home/{HADOOP_USER}/hadoop-{HADOOP_VERSION}-src' # location to extract and build hadoop
+HDFS_DIR = '/hadoop' # namenode, datanodes and tmp
 
 #############################
 #   Global Fabric Object    #
@@ -399,6 +400,20 @@ def ssh_config(ctx):
             else:
                 print('Already set')
 
+@task(help={'clean': 'Clean up previous settings'})
+def hosts_config(ctx, cleanup=False):
+    """
+    Bind internal fixed IP address between nodes in /etc/hosts
+    """
+    pass
+
+@task(help={'clean': 'Clean up previous settings'})
+def interfaces_config(ctx, cleanup=False):
+    """
+    Setup fixed IP address for each node itself in /etc/network/interfaces
+    """
+    pass
+
 @task(help={'user': 'The user you want to change password for', 'old': 'If enable this flag, it will use your user to login (i.e. ask your current password)'})
 def change_passwd(ctx, user, old=False):
     """
@@ -626,21 +641,21 @@ export PATH=$PATH:$HADOOP_INSTALL/bin:$HADOOP_INSTALL/sbin
     print("\n\n====== HDFS ======")
 
     print("Creating HDFS directories...")
-    PiGroup.run(f'sudo mkdir -p -m 0750 /hadoop/tmp && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/tmp')
+    PiGroup.run(f'sudo mkdir -p -m 0750 {HDFS_DIR}/tmp && sudo chown {HADOOP_USER}:{HADOOP_GROUP} {HDFS_DIR}/tmp')
     if NUM_NODES == 1:
         # If single node
         # master is both datanode and namenode
-        PiGroup[0].sudo(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
-        PiGroup[0].sudo(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
+        PiGroup[0].sudo(f'sudo mkdir -p {HDFS_DIR}/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} {HDFS_DIR}/namenode')
+        PiGroup[0].sudo(f'sudo mkdir -p {HDFS_DIR}/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} {HDFS_DIR}/datanode')
     else:
         # If multiple node
         # master => namenode
         # slaves => datanode
         for num_node, connection in enumerate(PiGroup):
             if num_node == 0:
-                connection.sudo(f'sudo mkdir -p /hadoop/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/namenode')
+                connection.sudo(f'sudo mkdir -p {HDFS_DIR}/namenode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} {HDFS_DIR}/namenode')
             else:
-                connection.sudo(f'sudo mkdir -p /hadoop/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} /hadoop/datanode')
+                connection.sudo(f'sudo mkdir -p {HDFS_DIR}/datanode && sudo chown {HADOOP_USER}:{HADOOP_GROUP} {HDFS_DIR}/datanode')
 
     print("Formating master HDFS as namenode...")
     """
@@ -733,6 +748,19 @@ export HADOOP_OPTS="$HADOOP_OPTS -Djava.library.path={HADOOP_INSTALL}/lib/build"
             connection.run('source %s' % bashrc_location) # apply changes
         else:
             print('Setting already exist')
+
+@task
+def format_hdfs(ctx):
+    """
+    Remove data in namenode, datanodes and logs. Then format namenode in master.
+    """
+    stopped = input('Have you stopped hdfs? (y/N) [N will run stop-hadoop]: ')
+    if stopped not in ('y', 'Y'):
+        stop_hadoop(ctx)
+    for connection in HadoopGroup:
+        connection.sudo(f'sudo rm -rf {HDFS_DIR}/namenode/* {HDFS_DIR}/datanode/* {HDFS_DIR}/tmp/*', hide=True)
+        connection.sudo(f'sudo rm -rf {HADOOP_INSTALL}/logs/*', hide=True)
+    HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format')
 
 ## Hadoop Utility Functions
 
