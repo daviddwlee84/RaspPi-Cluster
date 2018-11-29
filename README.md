@@ -9,11 +9,11 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ## Usage
 
-[**Usage in Detail !!**](FabfileHelp.md) (Manual)
+[**Usage in Detail !!**](Documentation/FabfileHelp.md) (Manual)
 
 ### Quick Start
 
-First check user setting in [fabfile.py](fabfile.py) (Important!) ([Connection Setting Example](ConnectionSetting.md))
+First check user setting in [fabfile.py](fabfile.py) (Important!) ([Connection Setting Example](Documentation/ConnectionSetting.md))
 
 ```sh
 # Install local dependencies
@@ -68,19 +68,21 @@ Subject|Ecosystem|Purpose
 
 A step by step record of how I build this system.
 
-* [Preparation](Preparation.md)
+* [Preparation](Tutorial/Preparation.md)
     * Hardware purchase
     * Software package and dependencies (PC/Laptop)
+        * Python > 3.6
+        * Fabric 2.X
 
-1. [Setup Raspberry Pis](SetupRaspPi.md)
+1. [Setup Raspberry Pis](Tutorial/SetupRaspPi.md)
 2. Assemble hardwares
 
     ![rpi-cluster](Picture/FourNodesRaspberryPiCluster.jpeg)
 
-3. [Setup fabric (brief notes)](SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
+3. [Setup fabric (brief notes)](Tutorial/SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
     * I've built some utility function first and then move on setup Hadoop
     * when any general purpose manipulation needed I'll add it.
-4. [Setup Hadoop](SetupHadoop.md)
+4. [Setup Hadoop](Tutorial/SetupHadoop.md)
 
 ## Notes about distributed computing
 
