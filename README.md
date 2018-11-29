@@ -17,7 +17,7 @@ First check user setting in [fabfile.py](fabfile.py) (Important!)
 
 ```sh
 # Install local dependencies
-python3 -m pip -r requirement.txt
+python3 -m pip install -r requirements.txt
 ```
 
 #### Quick Setup
