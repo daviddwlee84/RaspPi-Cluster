@@ -13,7 +13,7 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ### Quick Start
 
-First check user setting in [fabfile.py](fabfile.py) (Important!)
+First check user setting in [fabfile.py](fabfile.py) (Important!) ([Connection Setting Example](ConnectionSetting.md))
 
 ```sh
 # Install local dependencies
@@ -52,6 +52,8 @@ Utility function
 fab start-hadoop
 fab restart-hadoop
 fab stop-hadoop
+
+fab status-hadoop
 
 fab example-hadoop # If everything is done. You can play around with some hadoop official example
 ```

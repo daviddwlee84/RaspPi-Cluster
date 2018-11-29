@@ -33,5 +33,6 @@
 
 ### Python Packages
 
-* Python 3
+* Python 3.6
+    * f-string support
 * [Fabric 2](https://www.fabfile.org/)

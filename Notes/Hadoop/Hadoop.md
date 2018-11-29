@@ -17,6 +17,8 @@ Hadoop - The Definitive Guide
 
 ### Getting Started
 
+* [**How to Install and Set Up a 3-Node Hadoop Cluster**](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/)
+
 macOS installation guide
 
 * [How to install Hadoop|Spark on macOS High Sierra](http://hanslen.me/2018/01/19/How-to-install-Hadoop-on-macOS-High-Sierra/)
