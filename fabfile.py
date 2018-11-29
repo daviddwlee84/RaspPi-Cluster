@@ -87,16 +87,21 @@ HDFS_DIR = '/hadoop' # namenode, datanodes and tmp
 #   and Important Settings  #
 #############################
 
-# Hostname
-def getHosts(user=USER, mode=connection_mode.IP):
+# Get connection information
+def getHosts(user=USER, mode=CONN_MODE, onlyAddress=False):
     """
     Return hosts by either IP or Hostname
     """
     if mode == connection_mode.IP:
-        # Add user to host
-        hosts = list(map(lambda host: user + '@' + host, HOSTS_IP))
+        if onlyAddress:
+            hosts = HOSTS_IP
+        else:
+            hosts = list(map(lambda host: user + '@' + host, HOSTS_IP))
     elif mode == connection_mode.HOSTNAME:
-        hosts = list(map(lambda hostname: user + '@' + hostname + '.local', HOSTNAMES))
+        if onlyAddress:
+            hosts = list(map(lambda hostname: hostname + '.local', HOSTNAMES))
+        else:
+            hosts = list(map(lambda hostname: user + '@' + hostname + '.local', HOSTNAMES))
     else:
         print("Unknown mode...")
     return hosts
@@ -106,9 +111,9 @@ PiConfig = Config(overrides={'sudo': {'password': PASSWORD}})
 HadoopConfig = Config(overrides={'sudo': {'password': HADOOP_PASSWORD}})
 
 # Parallel Group
-PiGroup = ThreadingGroup(*getHosts(user=USER, mode=CONN_MODE), connect_kwargs={'password': PASSWORD, 'key_filename': DEFAULT_SSHKEY}, config=PiConfig)
+PiGroup = ThreadingGroup(*getHosts(user=USER), connect_kwargs={'password': PASSWORD, 'key_filename': DEFAULT_SSHKEY}, config=PiConfig)
 # For hadoop user
-HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER, mode=CONN_MODE), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{TEMP_FILES}/hadoopSSH/id_rsa'}, config=HadoopConfig)
+HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{TEMP_FILES}/hadoopSSH/id_rsa'}, config=HadoopConfig)
 
 #############################
 #       Helper Function     #
@@ -267,8 +272,8 @@ def ssh_connect(ctx, node_num, hadoop=False, private_key=DEFAULT_SSHKEY):
             print('No such node')
             node_ls(ctx)
             return
-        print('ssh -i %s %s' % (private_key, getHosts(user=user, mode=CONN_MODE)[int(node_num)]))
-        os.system('ssh -i %s %s' % (private_key, getHosts(user=user, mode=CONN_MODE)[int(node_num)]))
+        print('ssh -i %s %s' % (private_key, getHosts(user=user)[int(node_num)]))
+        os.system('ssh -i %s %s' % (private_key, getHosts(user=user)[int(node_num)]))
 
 @task(help={'line-content': 'Contnet to add', 'remote-file-path': 'Path to remote file', 'hadoop': 'Use hadoop user', 'override': 'Override content instead of append', 'verbose': 'Verbose output'})
 def append_line(ctx, line_content, remote_file_path, hadoop=False, override=False, verbose=False):
@@ -345,7 +350,7 @@ def set_hostname(ctx):
         return
     for node_num, hostname in enumerate(HOSTNAMES):
         print('Modifying %s (%d)...' % (hostname, node_num))
-        connection = connect(node_num, conn_mode=connection_mode.IP)
+        connection = connect(node_num, conn_mode=connection_mode.IP) # Force to use IP to connect
         # Modify /etc/hostname
         connection.sudo('echo "%s" | sudo tee /etc/hostname' % hostname)
         # Modify /etc/hosts
@@ -819,8 +824,8 @@ def status_hadoop(ctx):
                      'Report of running applications': running_app},
                      question="\n")
 
-    questionAsk({'Monitor HDFS': status_hdfs,
-                 'Monitor YARN': status_yarn},
+    questionAsk({'Monitor HDFS\n(http://%s:50070)' % (getHosts(onlyAddress=True)[0]): status_hdfs,
+                 'Monitor YARN\n(http://%s:8088)'% (getHosts(onlyAddress=True)[0]): status_yarn},
                  question="What do you want to monitor?")
 
 @task

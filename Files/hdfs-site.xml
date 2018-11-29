@@ -20,6 +20,8 @@
     <property>
         <name>dfs.replication</name>
         <value>3</value>
+        <description>Indicates how many times data is replicated in the cluster.</description>
+        <!-- Don’t enter a value higher than the actual number of slave nodes -->
     </property>
     <property>
         <name>dfs.datanode.data.dir</name>
@@ -28,5 +30,10 @@
     <property>
         <name>dfs.namenode.name.dir</name>
         <value>file:///hadoop/namenode</value>
+    </property>
+    <property>
+        <name>dfs.namenode.http-address</name>
+        <value>master.local:50070</value> <!-- Default value in Hadoop 3.1.1 is 0.0.0.0:9870 -->
+        <description>The address and the base port where the dfs namenode web ui will listen on.</description>
     </property>
 </configuration>

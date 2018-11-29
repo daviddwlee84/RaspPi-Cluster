@@ -21,12 +21,30 @@
     <property>
         <name>yarn.resourcemanager.hostname</name>
         <value>master.local</value>
+        <description>The hostname of the RM.</description>
     </property>
     <property>
         <name>yarn.nodemanager.aux-services.mapreduce_shuffle.class</name>
-        <!-- <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name> -->
-        <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+        <value>org.apache.hadoop.mapred.ShuffleHandler</value> <!-- This is already the default value -->
     </property>
+
+    <property>
+        <name>yarn.log-aggregation-enable</name>
+        <value>true</value>
+    </property>
+
+    <!-- <property>
+        <name>yarn.resourcemanager.resource-tracker.address</name>
+        <value>master.local:8025</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.scheduler.address</name>
+        <value>master.local:8035</value>
+    </property>
+    <property>
+        <name>yarn.resourcemanager.address</name>
+        <value>master.local:8050</value>
+    </property> -->
 
     <property>
         <name>yarn.nm.liveness-monitor.expiry-interval-ms</name>

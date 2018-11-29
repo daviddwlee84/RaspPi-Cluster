@@ -200,3 +200,10 @@ Thus I'm not going to get rid of the warning now. :P
 [![The YARN Memory Allocation Properties](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/hadoop-2-memory-allocation-new.png)](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/#the-memory-allocation-properties)
 
 ([Determine HDP Memory Configuration Settings](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.3.0/bk_installing_manually_book/content/determine-hdp-memory-config.html))
+
+## Configuration Files Documents
+
+* [for `core-site.xml`](https://hadoop.apache.org/docs/r3.1.1/hadoop-project-dist/hadoop-common/core-default.xml)
+* [for `yarn-site.xml`](https://hadoop.apache.org/docs/r3.1.1/hadoop-yarn/hadoop-yarn-common/yarn-default.xml)
+* [for `hdfs-site.xml`](https://hadoop.apache.org/docs/r3.1.1/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml)
+* [for `mapred-site.xml`](https://hadoop.apache.org/docs/r3.1.1/hadoop-mapreduce-client/hadoop-mapreduce-client-core/mapred-default.xml)

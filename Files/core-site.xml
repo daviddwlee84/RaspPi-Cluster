@@ -17,12 +17,19 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
-	<property>
-		<name>fs.default.name</name>
-		<value>hdfs://master.local:54310</value>
-	</property>
-	<property>
-		<name>hadoop.tmp.dir</name>
-		<value>file:///hadoop/tmp</value>
-	</property>
+    <!-- <property>
+        <name>fs.default.name</name>
+        <value>hdfs://master.local:54310</value>
+        <description>Deprecated. Use (fs.defaultFS) property instead</description>
+    </property> -->
+    <property>
+        <name>fs.defaultFS</name>
+        <value>hdfs://master.local:9000</value>
+        <description>The name of the default file system</description>
+    </property>
+    <property>
+        <!-- A base for other temporary directories. -->
+        <name>hadoop.tmp.dir</name>
+        <value>file:///hadoop/tmp</value>
+    </property>
 </configuration>
