@@ -15,6 +15,11 @@ And try to write a quick start script for them. And maybe some example demo.
 
 First check user setting in [fabfile.py](fabfile.py) (Important!)
 
+```sh
+# Install local dependencies
+python3 -m pip -r requirement.txt
+```
+
 #### Quick Setup
 
 ```sh
