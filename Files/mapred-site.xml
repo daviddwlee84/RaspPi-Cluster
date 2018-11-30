@@ -53,6 +53,16 @@
         <name>mapreduce.jobhistory.webapp.address</name>
         <value>master.local:19888</value>
     </property>
+
+    <!-- === Memory Settings === -->
+    <property>
+        <!-- How much memory will be allocated to the ApplicationMaster.
+        This is a constant value that should fit in the container maximum size. -->
+        <name>yarn.app.mapreduce.am.resource.mb</name>
+        <value>512</value>
+    </property>
+    <!-- How much memory will be allocated to each map or reduce operation.
+    This should be less than the maximum size. -->
     <property>
         <name>mapreduce.map.memory.mb</name>
         <value>256</value>
@@ -61,6 +71,8 @@
         <name>mapreduce.reduce.memory.mb</name>
         <value>256</value>
     </property>
+
+
     <property>
         <name>mapreduce.map.java.opts</name>
         <value>-Xmx200m</value>

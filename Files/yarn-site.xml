@@ -26,16 +26,23 @@
         <description>The hostname of the RM.</description>
     </property>
 
-    <!-- DONT DO THIS, EVERY NODE NEEDS A NODE MANAGER... -->
+    <!-- Not sure why this doesn't work.
+    But I really want that it can show http://hostname.local:8042/node/...
+    in RM webapp rather than just http://hostname:8042/node/... -->
     <!-- <property>
-        <name>yarn.nodemanager.hostname</name>
-        <value>master.local</value>
-        <description>The hostname of the NM.</description>
+        <name>yarn.nodemanager.webapp.address</name>
+        <value>${yarn.nodemanager.hostname}.local:8042</value>
+        <description>NM Webapp address.</description>
     </property> -->
 
     <property>
         <name>yarn.log-aggregation-enable</name>
         <value>true</value>
+    </property>
+
+    <property>
+        <name>yarn.acl.enable</name>
+        <value>0</value>
     </property>
 
     <!-- <property>
@@ -64,24 +71,34 @@
         <name>yarn.nodemanager.resource.cpu-vcores</name>
         <value>4</value>
     </property>
+
+    <!-- === Memory Settings === -->
     <property>
+        <!-- How much memory can be allocated for YARN containers on a single node.
+        This limit should be higher than all the others; otherwise,
+        container allocation will be rejected and applications will fail.
+        However, it should not be the entire amount of RAM on the node. -->
         <name>yarn.nodemanager.resource.memory-mb</name>
-        <value>1024</value>
+        <value>768</value> <!-- 75% of memory for Raspberry Pi 3 (1GB) -->
     </property>
+    <!-- How much memory a single container can consume and the minimum memory allocation allowed.
+    A container will never be bigger than the maximum, or else allocation will fail
+    and will always be allocated as a multiple of the minimum amount of RAM. -->
     <property>
-        <name>yarn.app.mapreduce.am.resource.mb</name>
-        <value>512</value>
+        <name>yarn.scheduler.maximum-allocation-mb</name>
+        <value>768</value> <!-- 75% of memory for Raspberry Pi 3 (1GB) -->
     </property>
     <property>
         <name>yarn.scheduler.minimum-allocation-mb</name>
-        <value>256</value>
+        <value>64</value> 
     </property>
     <property>
         <name>yarn.nodemanager.vmem-check-enabled</name>
         <value>false</value>
     </property>
-    <property>
+
+    <!-- <property>
         <name>yarn.nodemanager.vmem-pmem-ratio</name>
         <value>4</value>
-    </property>
+    </property> -->
 </configuration>
