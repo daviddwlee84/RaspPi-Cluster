@@ -2,13 +2,9 @@
 
 ## Overview
 
-## Hadoop Architecture
+### HDFS
 
-[![hdfs architecture](https://hadoop.apache.org/docs/r1.2.1/images/hdfsarchitecture.gif)](https://hadoop.apache.org/docs/r1.2.1/hdfs_design.html#NameNode+and+DataNodes)
-
-### NameNode
-
-### DataNodes
+### YARN
 
 ## Hadoop Streaming
 

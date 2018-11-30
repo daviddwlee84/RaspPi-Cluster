@@ -53,7 +53,7 @@ fab start-hadoop
 fab restart-hadoop
 fab stop-hadoop
 
-fab status-hadoop
+fab status-hadoop # Monitor Hadoop behavior
 
 fab example-hadoop # If everything is done. You can play around with some hadoop official example
 ```
@@ -94,7 +94,8 @@ Algorithm
 
 [Hadoop](Notes/Hadoop/Hadoop.md)
 
-* HDFS
+* [HDFS](Notes/Hadoop/HDFS.md)
+* [YARN](Notes/Hadoop/YARN.md)
 
 Spark
 
@@ -106,18 +107,6 @@ Kubernetes
 * Better switch between multiple configuration files for multi-server
 * More friendly Document
 * Hadoop utility function introduction
-
-## Links
-
-### Similar Project
-
-* [gregbaker/raspberry-pi-cluster](https://github.com/gregbaker/raspberry-pi-cluster) - use fabric 1.X
-* [How to build a 7 node Raspberry Pi Hadoop Cluster](http://www.nigelpond.com/uploads/How-to-build-a-7-node-Raspberry-Pi-Hadoop-Cluster.pdf)
-* [A Hadoop data lab project on Raspberry Pi](https://blogs.sap.com/2015/04/25/a-hadoop-data-lab-project-on-raspberry-pi-part-14/)
-* [Raspberry PI Hadoop Cluster](http://www.widriksson.com/raspberry-pi-hadoop-cluster/)
-* Medium - How to Hadoop at home with Raspberry Pi
-    * [Part 1: Setting up Raspberry Pi and network configurations](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-1-3b71f1b8ac4e#.6xuk426d2)
-    * [Part 2: Hadoop single node setup, testing and prepping the cluster](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-2-b8ccfbe6ba9a#.rdymvh5zn)
-    * [Part 3: Hadoop cluster setup, testing and final thoughts](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-3-7d114d35fdf1#.cn9da731k)
-* [Build a Hadoop 3 cluster with Raspberry Pi 3](https://medium.com/@oliver_hu/build-a-hadoop-3-cluster-with-raspberry-pi-3-f451b7f93254)
-* [Building a Hadoop cluster with Raspberry Pi](https://developer.ibm.com/recipes/tutorials/building-a-hadoop-cluster-with-raspberry-pi/)
+* Dynamic Configure based on different hardware and maybe GUI and save multiple settings
+    * Set up hardware detail e.g. RAM size
+    * Read and write *.xml
