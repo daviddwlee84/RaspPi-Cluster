@@ -201,6 +201,18 @@ Thus I'm not going to get rid of the warning now. :P
 
 ([Determine HDP Memory Configuration Settings](https://docs.hortonworks.com/HDPDocuments/HDP2/HDP-2.3.0/bk_installing_manually_book/content/determine-hdp-memory-config.html))
 
+### Hostname Problem
+
+I finally found that. Maybe the ApplicationMaster or somewhat can't not communicate with other nodes. (That I've read the logs and found that only the map on the one node can be successful others will fail.)
+
+So the conlcusion is. You have to comment the self direction (i.e. `127.0.1.1 hostname`)
+And set all the other nodes' hostname including itself to `/etc/hosts`
+
+> I haven't find out why I can't set it to be hostname.local because I really don't like hard-code things...
+
+* [**Hadoop Wiki - Connection Refused**](https://wiki.apache.org/hadoop/ConnectionRefused)
+* [**Network setup - The hostname resolution**](https://www.debian.org/doc/manuals/debian-reference/ch05.en.html#_the_hostname_resolution)
+
 ## Links
 
 ### Configuration Files Documents
