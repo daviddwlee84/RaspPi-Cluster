@@ -159,7 +159,6 @@ def node_ls(ctx, actual=False):
     """
     print('You, %s, have %d nodes' % (USER, NUM_NODES))
     if actual:
-        print()
         for num_node, connection in enumerate(PiGroup):
             print("The %d node's hostname and IP" % num_node)
             connection.run('hostname && hostname -I')
@@ -382,15 +381,19 @@ def hosts_config(ctx, cleanup=False):
         if cleanup:
             print('\n'+HOSTNAMES[num_node])
             for i in range(NUM_NODES):
-                if i != num_node:
-                    print(HOSTS_IP[i]+'\t'+HOSTNAMES[i])
-                    connection.sudo("sudo sed -i '/%s/d' %s" % (HOSTS_IP[i]+'\t'+HOSTNAMES[i], '/etc/hosts'), hide=True)
+                if i == num_node:
+                    comment_line(ctx, '127.0.1.1\t%s' % HOSTNAMES[i], '/etc/hosts', uncomment=True)
+                print(HOSTS_IP[i]+'\t'+HOSTNAMES[i])
+                connection.sudo("sudo sed -i '/%s/d' %s" % (HOSTS_IP[i]+'\t'+HOSTNAMES[i], '/etc/hosts'), hide=True)
         else:
-            print('\n', HOSTNAMES[num_node])
+            print('\n'+HOSTNAMES[num_node])
             for i in range(NUM_NODES):
-                if i != num_node:
-                    print(HOSTS_IP[i]+'\t'+HOSTNAMES[i])
-                    connection.sudo("echo '%s' | sudo tee -a %s" % (HOSTS_IP[i]+'\t'+HOSTNAMES[i], '/etc/hosts'), hide=True)
+                if i == num_node:
+                    # Disable self-routing
+                    comment_line(ctx, '127.0.1.1\t%s' % HOSTNAMES[i], '/etc/hosts')
+                print(HOSTS_IP[i]+'\t'+HOSTNAMES[i])
+                connection.sudo("echo '%s' | sudo tee -a %s" % (HOSTS_IP[i]+'\t'+HOSTNAMES[i], '/etc/hosts'), hide=True)
+    print('\n\nResult:\n')
     CMD(ctx, 'cat /etc/hosts', verbose=True) # Check result
 
 @task(help={'clean': 'Clean up previous settings'})
@@ -506,6 +509,7 @@ def update_hadoop_conf(ctx, filesfolder=FILE_PATH, verbose=False):
             print("Uploading", local, "to", destinaiton)
         uploadfile(ctx, local, destinaiton, permission=True)
     PiGroup.run(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {HADOOP_INSTALL}/etc/hadoop')
+    print("\nConfiguration updated! (remember to restart Hadoop to load the settings if your Hadoop is still running.\n")
 
 @task(help={'verbose': "More detail of setup checking"})
 def install_hadoop(ctx, verbose=False):
@@ -842,7 +846,7 @@ def status_hadoop(ctx):
                      'Report of running applications': running_app})
 
     print('HDFS Web Monitor: \thttp://%s:50070' % (getHosts(onlyAddress=True)[0]))
-    print('YARN Web Monitor: \thttp://%s:8088' % (getHosts(onlyAddress=True)[0]))
+    print('YARN Web Monitor: \thttp://%s:8088/cluster' % (getHosts(onlyAddress=True)[0]))
     print('YARN Job History: \thttp://%s:19888/jobhistory' % (getHosts(onlyAddress=True)[0]))
     print('YARN NameNode Manager: \thttp://%s:8042/node' % (getHosts(onlyAddress=True)[0]))
 
