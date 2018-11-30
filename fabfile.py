@@ -31,10 +31,10 @@ NUM_NODES = 4
 
 # Host IP
 HOSTS_IP = [
-    '192.168.1.109', # Master
-    '192.168.1.101', # Slave1
-    '192.168.1.102', # Slave2
-    '192.168.1.103', # Slave3
+    '192.168.1.105', # Master
+    '192.168.1.103', # Slave1
+    '192.168.1.110', # Slave2
+    '192.168.1.102', # Slave3
 ]
 
 # Hostname
@@ -152,15 +152,21 @@ def questionAsk(questionDict, question=None):
 #############################
 
 ### General usage
-@task
-def node_ls(ctx):
+@task(help={'actual': "Print actual hostname address from server"})
+def node_ls(ctx, actual=False):
     """
-    List nodes IP and Hostname
+    List nodes IP and Hostname either by settings or return message
     """
     print('You, %s, have %d nodes' % (USER, NUM_NODES))
-    print('Node list:')
-    print(getHosts(mode=connection_mode.IP))
-    print(getHosts(mode=connection_mode.HOSTNAME))
+    if actual:
+        print()
+        for num_node, connection in enumerate(PiGroup):
+            print("The %d node's hostname and IP" % num_node)
+            connection.run('hostname && hostname -I')
+    else:
+        print('Node list:')
+        print(getHosts(mode=connection_mode.IP))
+        print(getHosts(mode=connection_mode.HOSTNAME))
 
 @task(help={'command': "Command you want to sent to host", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def CMD(ctx, command, verbose=False, node_num=-1):
@@ -360,14 +366,39 @@ def set_hostname(ctx):
         connection.run('cat /etc/hostname')
         print("/etc/hosts:")
         connection.run('cat /etc/hosts')
-        
-    # Reboot
     print("Rebooting...")
     try:
         CMD_parallel(ctx, 'sudo reboot')
     except:
         # It will get error when lost connection
         pass
+
+@task(help={'clean': 'Clean up previous settings'})
+def hosts_config(ctx, cleanup=False):
+    """
+    Bind internal fixed IP address between nodes in /etc/hosts
+    """
+    for num_node, connection in enumerate(PiGroup):
+        if cleanup:
+            print('\n'+HOSTNAMES[num_node])
+            for i in range(NUM_NODES):
+                if i != num_node:
+                    print(HOSTS_IP[i]+'\t'+HOSTNAMES[i])
+                    connection.sudo("sudo sed -i '/%s/d' %s" % (HOSTS_IP[i]+'\t'+HOSTNAMES[i], '/etc/hosts'), hide=True)
+        else:
+            print('\n', HOSTNAMES[num_node])
+            for i in range(NUM_NODES):
+                if i != num_node:
+                    print(HOSTS_IP[i]+'\t'+HOSTNAMES[i])
+                    connection.sudo("echo '%s' | sudo tee -a %s" % (HOSTS_IP[i]+'\t'+HOSTNAMES[i], '/etc/hosts'), hide=True)
+    CMD(ctx, 'cat /etc/hosts', verbose=True) # Check result
+
+@task(help={'clean': 'Clean up previous settings'})
+def interfaces_config(ctx, cleanup=False):
+    """
+    Setup fixed IP address for each node itself in /etc/network/interfaces
+    """
+    pass
 
 @task
 def ssh_config(ctx):
@@ -405,19 +436,6 @@ def ssh_config(ctx):
             else:
                 print('Already set')
 
-@task(help={'clean': 'Clean up previous settings'})
-def hosts_config(ctx, cleanup=False):
-    """
-    Bind internal fixed IP address between nodes in /etc/hosts
-    """
-    pass
-
-@task(help={'clean': 'Clean up previous settings'})
-def interfaces_config(ctx, cleanup=False):
-    """
-    Setup fixed IP address for each node itself in /etc/network/interfaces
-    """
-    pass
 
 @task(help={'user': 'The user you want to change password for', 'old': 'If enable this flag, it will use your user to login (i.e. ask your current password)'})
 def change_passwd(ctx, user, old=False):
@@ -821,11 +839,15 @@ def status_hadoop(ctx):
         def running_app():
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/yarn application -list')
         questionAsk({'Report of running nodes': running_node,
-                     'Report of running applications': running_app},
-                     question="\n")
+                     'Report of running applications': running_app})
 
-    questionAsk({'Monitor HDFS\n(http://%s:50070)' % (getHosts(onlyAddress=True)[0]): status_hdfs,
-                 'Monitor YARN\n(http://%s:8088)'% (getHosts(onlyAddress=True)[0]): status_yarn},
+    print('HDFS Web Monitor: \thttp://%s:50070' % (getHosts(onlyAddress=True)[0]))
+    print('YARN Web Monitor: \thttp://%s:8088' % (getHosts(onlyAddress=True)[0]))
+    print('YARN Job History: \thttp://%s:19888/jobhistory' % (getHosts(onlyAddress=True)[0]))
+    print('YARN NameNode Manager: \thttp://%s:8042/node' % (getHosts(onlyAddress=True)[0]))
+
+    questionAsk({'Monitor HDFS': status_hdfs,
+                 'Monitor YARN': status_yarn},
                  question="What do you want to monitor?")
 
 @task

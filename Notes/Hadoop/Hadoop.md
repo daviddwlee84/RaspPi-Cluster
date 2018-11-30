@@ -23,6 +23,11 @@ Hadoop - The Definitive Guide
 
 ## Links
 
+### Article
+
+* [**Hadoop**](https://docs.deistercloud.com/Technology.50/Hadoop/index.xml?embedded=true&navbar=0&param-iframe=index-iframe)
+    * [Hadoop cluster setup](https://docs.deistercloud.com/Technology.50/Hadoop/index.xml)
+
 ### Getting Started
 
 * [**How to Install and Set Up a 3-Node Hadoop Cluster**](https://www.linode.com/docs/databases/hadoop/how-to-install-and-set-up-hadoop-cluster/)
