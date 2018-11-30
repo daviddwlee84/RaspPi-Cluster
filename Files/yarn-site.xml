@@ -25,11 +25,13 @@
         <value>master.local</value>
         <description>The hostname of the RM.</description>
     </property>
-    <property>
+
+    <!-- DONT DO THIS, EVERY NODE NEEDS A NODE MANAGER... -->
+    <!-- <property>
         <name>yarn.nodemanager.hostname</name>
         <value>master.local</value>
         <description>The hostname of the NM.</description>
-    </property>
+    </property> -->
 
     <property>
         <name>yarn.log-aggregation-enable</name>
