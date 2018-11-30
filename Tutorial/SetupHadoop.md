@@ -213,6 +213,12 @@ And set all the other nodes' hostname including itself to `/etc/hosts`
 * [**Hadoop Wiki - Connection Refused**](https://wiki.apache.org/hadoop/ConnectionRefused)
 * [**Network setup - The hostname resolution**](https://www.debian.org/doc/manuals/debian-reference/ch05.en.html#_the_hostname_resolution)
 
+#### Multicast DNS (mDNS)
+
+* [Wiki - .local](https://en.wikipedia.org/wiki/.local)
+
+This is a zero-configuration protocol that works on LAN subnets. No server required. Uses the `.local` TL;DR.
+
 ## Links
 
 ### Configuration Files Documents

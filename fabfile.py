@@ -248,7 +248,10 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
         simple_upload(REMOTE_UPLOAD)
         if verbose:
             print("Moving all file from %s to %s" % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
-        CMD_parallel(ctx, 'sudo mv %s %s' % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
+        if int(node_num) == -1:
+            CMD_parallel(ctx, 'sudo mv %s %s' % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
+        else:
+            CMD(ctx, 'sudo mv %s %s' % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination), node_num=node_num)
     else:
         try:
             simple_upload(destination)        
@@ -859,9 +862,9 @@ def example_hadoop(ctx):
     """
     Select a classic hadoop example to run
     """
-
-    resultDir = f'/home/{HADOOP_USER}/hadoop_result'
-    uploadDir = f'/home/{HADOOP_USER}/to_be_processed'
+    # Remote directory
+    resultDir = f'/home/{HADOOP_USER}/hadoop_example_result'
+    uploadDir = f'/home/{HADOOP_USER}/hadoop_example_upload'
 
     def PI_example():
         # Current test
@@ -878,8 +881,8 @@ def example_hadoop(ctx):
         HadoopGroup[0].run('%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-%s.jar pi %d %d' % (HADOOP_INSTALL, HADOOP_INSTALL, HADOOP_VERSION, num_maps, samples))
 
     def Wordcount_example():
-        local = input('Use local file or Hadoop license?\n\t1. Local file\n\t2. Hadoop license\n\n1 or 2: ')
-        if local == '2':
+        # Use default hadoop licence to test
+        def hadoop_license():
             HadoopGroup[0].run('mkdir -p %s' % resultDir)
             try:
                 HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm /license.txt /license-out')
@@ -891,34 +894,58 @@ def example_hadoop(ctx):
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount /license.txt /license-out')
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyToLocal /license-out {resultDir}/license-out')
             print("Result:")
-            #HadoopGroup[0].run(f'cat {resultDir}/license-out/part-r-00000') # print entire result may be too long to display
             HadoopGroup[0].run(f'head {resultDir}/license-out/part-r-00000')
             print("\n...\n")
             HadoopGroup[0].run(f'tail {resultDir}/license-out/part-r-00000')
-        else:
+        def local_file():
             location = input('Where is your file? (file location): ')
             filename = os.path.basename(location)
-            HadoopGroup[0].run('mkdir -p %s' % uploadDir)
-            uploadfile(ctx, location, destination=os.path.join(uploadDir, filename), permission=True, verbose=True)
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {uploadDir}/{filename} /{filename}-in')
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -ls /')
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount /{filename}-in /{filename}-out')
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyToLocal /{filename}-out {resultDir}/{filename}-out')
+            hdfsDir = '/hadoopExample/wordCount'
+            upload_hdfs(ctx, location, filename=filename, uploadDir=uploadDir, hdfsDir=hdfsDir)
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount {hdfsDir}/{filename} {hdfsDir}/{filename}-out')
             print("Result:")
-            HadoopGroup[0].run(f'head {resultDir}/{filename}-out/part-r-00000')
-            print("\n...\n")
-            HadoopGroup[0].run(f'tail {resultDir}/{filename}-out/part-r-00000')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -cat {hdfsDir}/{filename}-out/part-r-00000')
             clean = input('Clean up? (Y/n): ')
             if clean not in ('n', 'N'):
-                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm /{filename}-in /{filename}-out')
-                HadoopGroup[0].run('rm -r %s/%s-out' % (resultDir, filename))
-
+                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm -r {hdfsDir}/{filename} {hdfsDir}/{filename}-out')
+        questionAsk({'Hadoop license': hadoop_license, 'Local file': local_file}, question='\nUse default Hadoop license or Local file?')
     questionAsk({'PI': PI_example, 'Wordcount': Wordcount_example}, question="Select an Hadoop example")
 
 @task
 def hadoop_streaming(ctx, mapper, reducer, **kargs):
     pass
 
+@task(help={'path-to-file': 'Local file path', 'uploadDir': 'Remote upload dir/path', 'hdfsDir': 'HDFS directory', 'override': 'Override same name file in HDFS', 'verbose': 'Verbose output'})
+def upload_hdfs(ctx, path_to_file, filename='', uploadDir = f'/home/{HADOOP_USER}/HDFSupload', hdfsDir='/HDFSupload', override=False, verbose=False):
+    """
+    Upload local file to cluster's HDFS
+    Default:
+        Remote Upload: /home/hduser/HDFSupload/yourFileName
+        HDFS Upload: /HDFSupload/yourFileName
+    """
+    Master = HadoopGroup[0]
+    # Upload to remote
+    if not filename:
+        filename = os.path.basename(path_to_file)
+    remotefile = os.path.join(uploadDir, filename)
+    Master.run('mkdir -p %s' % uploadDir)
+    if verbose:
+        print(f'Uploading {path_to_file} to remote {remotefile}')
+    uploadfile(ctx, path_to_file, destination=remotefile, permission=True, node_num=0)
+
+    # From remote to HDFS
+    hdfsfile = os.path.join(hdfsDir, filename)
+    Master.run(f'{HADOOP_INSTALL}/bin/hadoop fs -mkdir -p {hdfsDir}')
+    if verbose:
+        print(f'Copy from Local {remotefile} to HDFS {hdfsfile}')
+    if override:
+        Master.run(f'{HADOOP_INSTALL}/bin/hadoop fs -copyFromLocal -f {remotefile} {hdfsfile}', hide=not verbose)
+    else:
+        Master.run(f'{HADOOP_INSTALL}/bin/hadoop fs -copyFromLocal {remotefile} {hdfsfile}', hide=not verbose)
+    if verbose:
+        print(f'Content in {hdfsDir}')
+        Master.run(f'{HADOOP_INSTALL}/bin/hadoop fs -ls {hdfsDir}')
+
 @task
-def upload_hdfs(ctx, file, name=None):
+def op_hdfs(ctx):
     pass
