@@ -103,13 +103,16 @@ $ fab --help uploadfile
 Usage: fab [--core-opts] uploadfile [--options] [other tasks here ...]
 
 Docstring:
-  Copy local file to remote
+  Copy local file to remote. (If the file exist, it will be overwritten)
+  Make sure you are the owner of the remote directory
+  Use scp mode to support copy folder
 
 Options:
   -d STRING, --destination=STRING   Remote destination (directory)
   -f STRING, --filepath=STRING      Path to file in local
   -n INT, --node-num=INT            Node number of HOSTS list
   -p, --permission                  Use superuser to move file
+  -s, --scp                         Use scp instead of fabric
   -v, --verbose                     Verbose output
 ```
 
@@ -123,6 +126,12 @@ Use permission flag if you want to upload file to somewhere need sudo priviledge
 
 ```sh
 fab uploadfile README.md -d=/etc -p
+```
+
+Use scp to copy directory!
+
+```sh
+fab uploadfile ./Example/MapReduce -d=/home/hduser/Upload -p -s -n=0
 ```
 
 ### ssh

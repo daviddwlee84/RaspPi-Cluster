@@ -205,13 +205,25 @@ def CMD_parallel(ctx, command, hadoop=False, verbose=False):
         for connection, result in results.items():
             print("{0.host}:\n{1.stdout}\n".format(connection, result))
 
-@task(help={'filepath': "Path to file in local", 'destination': "Remote destination (directory)", 'permission': "Use superuser to move file", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
-def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbose=False, node_num=-1):
+@task(help={'filepath': "Path to file in local", 'destination': "Remote destination (directory)", 'permission': "Use superuser to move file", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list", 'scp': "Use scp instead of fabric"})
+def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbose=False, node_num=-1, scp=False):
     """
     Copy local file to remote. (If the file exist, it will be overwritten)
     Make sure you are the owner of the remote directory
+    Use scp mode to support copy folder
     """
-    # Define helper function
+    # Use scp
+    def scp_upload(dest):
+        if int(node_num) == -1:
+            for host in getHosts(user=USER):
+                os.system('scp -r -i %s %s %s:%s' % (DEFAULT_SSHKEY, filepath, host, dest))
+        elif NUM_NODES > int(node_num) >= 0:
+            os.system('scp -r -i %s %s %s:%s' % (DEFAULT_SSHKEY, filepath, getHosts(user=USER)[int(node_num)], dest))
+        else:
+            print('No such node.')    
+            node_ls(ctx)
+    
+    # Use fabric connection.put
     def simple_upload(dest):
         if int(node_num) == -1:
             # Run command on all nodes
@@ -245,7 +257,10 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
     CMD_parallel(ctx, f'mkdir -p {REMOTE_UPLOAD}')
     # Upload file
     if permission:
-        simple_upload(REMOTE_UPLOAD)
+        if scp:
+            scp_upload(REMOTE_UPLOAD)
+        else:
+            simple_upload(REMOTE_UPLOAD)
         if verbose:
             print("Moving all file from %s to %s" % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination))
         if int(node_num) == -1:
@@ -253,10 +268,13 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
         else:
             CMD(ctx, 'sudo mv %s %s' % (os.path.join(REMOTE_UPLOAD, os.path.basename(filepath)), destination), node_num=node_num)
     else:
-        try:
-            simple_upload(destination)        
-        except PermissionError:
-            print("Your destination need superuser privilege, try using -p flag!")
+        if scp:
+            scp_upload(destination)
+        else:
+            try:
+                simple_upload(destination)        
+            except PermissionError:
+                print("Your destination need superuser privilege, try using -p flag!")
 
 @task(help={'node-num': "Node number of HOSTS list", 'hadoop': 'Use Hadoop user instead of pi user to login', 'private-key': "Path to private key"})
 def ssh_connect(ctx, node_num, hadoop=False, private_key=DEFAULT_SSHKEY):

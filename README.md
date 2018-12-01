@@ -30,10 +30,11 @@ fab ssh-config # Generate ssh-key and setup to all nodes
 fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)
 ```
 
-Regular used function
+**Regular used function** (make sure you've generated ssh-key or move your ssh-key to `./temp_files/id_rsa`)
 
 ```sh
-fab ssh-connect NODE_NUM # Connect to any node by it's index without password after you've generated ssh-key (use -h flag to be hadoop user)
+fab ssh-connect NODE_NUM # Connect to any node by it's index without password (use -h flag to be hadoop user)
+fab uploadfile file_or_dir -s -p # Upload file or folder to remote (specific node use -n=NODE_NUM flag)
 ```
 
 #### Hadoop
