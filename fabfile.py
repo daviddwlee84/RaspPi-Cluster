@@ -87,6 +87,12 @@ HADOOP_VERSION = '3.1.1'
 #HADOOP_MIRROR = 'http://ftp.mirror.tw/pub/apache/hadoop/common' # Taiwan mirror
 HADOOP_MIRROR = 'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common' # China Tsinghua mirror
 
+# === Spark === #
+SPARK_VERSION = '2.4.0'
+# Pre-built for Apache Hadoop 2.7 and later
+SPARK_MIRROR = 'http://ftp.mirror.tw/pub/apache/spark' # Taiwan mirror
+
+
 # Location for hadoop SSH key
 HADOOP_SSH_KEY_PATH = f'{SSH_KEY_PATH}/hadoopSSH'
 
@@ -102,6 +108,11 @@ HADOOP_REMOTE_SRC_TAR = f'{HADOOP_MIRROR}/hadoop-{HADOOP_VERSION}/{HADOOP_SRC_TA
 HADOOP_INSTALL = f'/opt/hadoop-{HADOOP_VERSION}' # i.e. $HADOOP_HOME
 HADOOP_BUILD = f'/home/{HADOOP_USER}/hadoop-{HADOOP_VERSION}-src' # location to extract and build hadoop
 HDFS_DIR = '/hadoop' # namenode, datanodes and tmp
+
+# Spark
+SPARK_TARFILE = f'spark-{SPARK_VERSION}-bin-hadoop2.7.tgz'
+SPARK_REMOTE_TAR = f'{SPARK_MIRROR}/spark-{SPARK_VERSION}/spark-{SPARK_VERSION}-bin-hadoop2.7.tgz'
+SPARK_INSTALL = f'/opt/spark-{SPARK_VERSION}-bin-hadoop2.7'
 
 #############################
 #   Global Fabric Object    #
@@ -539,6 +550,26 @@ def ssh_config(ctx):
             else:
                 print('Already set')
 
+@task(help={'clean': 'Clean up previous settings'})
+def add_source(ctx, cleanup=False):
+    """
+    Add sources to solve slow download problem because of the fucking GFW
+    """
+    pipconf = '/etc/pip.conf'
+    if cleanup:
+        # pip
+        # comment_line(ctx, r'extra-index-url=', pipconf, uncomment=True)
+        # Not sure why this will delete all the content
+        # PiGroup.run("sudo sed -i '/%s/d' %s" % (r'index-url=http:\/\/mirrors.aliyun.com\/pypi\/simple\/', pipconf), hide=True)
+        # PiGroup.run("sudo sed -i '/%s/d' %s" % (r'[install]', pipconf), hide=True)
+        # PiGroup.run("sudo sed -i '/%s/d' %s" % (r'trusted-host=mirrors.aliyun.com', pipconf), hide=True)
+        append_line(ctx, '[global]\nextra-index-url=https://www.piwheels.org/simple', pipconf, override=True) # recover to original status
+    else:
+        # pip
+        comment_line(ctx, r'extra-index-url=https:\/\/www.piwheels.org\/simple', pipconf)
+        append_line(ctx, 'index-url=http://mirrors.aliyun.com/pypi/simple/\n[install]\ntrusted-host=mirrors.aliyun.com', pipconf)
+    # pip
+    CMD(ctx, 'cat %s' % pipconf, verbose=True) # Check result
 
 @task(help={'user': 'The user you want to change password for', 'old': 'If enable this flag, it will use your user to login (i.e. ask your current password)'})
 def change_passwd(ctx, user, old=False):
@@ -601,7 +632,7 @@ def update_hadoop_conf(ctx, filesfolder=FILE_PATH, verbose=False):
             print("Uploading", local, "to", destinaiton)
         uploadfile(ctx, local, destinaiton, permission=True)
     PiGroup.run(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {HADOOP_INSTALL}/etc/hadoop')
-    print("\nConfiguration updated! (remember to restart Hadoop to load the settings if your Hadoop is still running.\n")
+    print("\nConfiguration updated! (remember to restart Hadoop to load the settings if your Hadoop is still running.)\n")
 
 @task(help={'verbose': "More detail of setup checking"})
 def install_hadoop(ctx, verbose=False):
@@ -707,10 +738,9 @@ def install_hadoop(ctx, verbose=False):
 # Hadoop Settings
 export JAVA_HOME=$(readlink -f /usr/bin/java | sed "s:bin/java::")
 export HADOOP_HOME={HADOOP_INSTALL}
-export HADOOP_INSTALL=$HADOOP_HOME
 export YARN_HOME=$HADOOP_HOME
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
-export PATH=$PATH:$HADOOP_INSTALL/bin:$HADOOP_INSTALL/sbin
+export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
 '''
     for connection in PiGroup:
         print("Setting", connection)
@@ -924,6 +954,9 @@ def restart_hadoop(ctx):
 
 @task
 def status_hadoop(ctx):
+    """
+    Show Hadoop status
+    """
     # Monitor your HDFS Cluster
     def status_hdfs():
         HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfsadmin -report')
@@ -956,13 +989,6 @@ def example_hadoop(ctx):
     uploadDir = f'/home/{HADOOP_USER}/hadoop_example_upload'
 
     def PI_example():
-        # Current test
-        # 16, 1000 will failed at 100% map 100% reduce.
-        # 2, 2 will work.
-        # 10, 10 will get the same warning as 16, 1000 but will work.
-        # Guessing it's the resource limit problem
-        # But I've set up HADOOP_HEAPSIZE_MAX to be 256MB in hadoop-env.sh
-        # And other more stuff in mapred-site.xml
         num_maps = input('Number of Maps (default 16): ')
         num_maps = 16 if not num_maps else int(num_maps)
         samples = input('Samples per Map (default 1000): ')
@@ -1000,10 +1026,6 @@ def example_hadoop(ctx):
         questionAsk({'Hadoop license': hadoop_license, 'Local file': local_file}, question='\nUse default Hadoop license or Local file?')
     questionAsk({'PI': PI_example, 'Wordcount': Wordcount_example}, question="Select an Hadoop example")
 
-@task
-def hadoop_streaming(ctx, mapper, reducer, **kargs):
-    pass
-
 @task(help={'path-to-file': 'Local file path', 'uploadDir': 'Remote upload dir/path', 'hdfsDir': 'HDFS directory', 'override': 'Override same name file in HDFS', 'verbose': 'Verbose output'})
 def upload_hdfs(ctx, path_to_file, filename='', uploadDir = f'/home/{HADOOP_USER}/HDFSupload', hdfsDir='/HDFSupload', override=False, verbose=False):
     """
@@ -1035,6 +1057,179 @@ def upload_hdfs(ctx, path_to_file, filename='', uploadDir = f'/home/{HADOOP_USER
         print(f'Content in {hdfsDir}')
         Master.run(f'{HADOOP_INSTALL}/bin/hadoop fs -ls {hdfsDir}')
 
+
+### Spark
+
+## Spark Setup
+
 @task
-def op_hdfs(ctx):
-    pass
+def download_spark(ctx):
+    """
+    Download specific version of Spark to ./temp_files
+    """
+    print('Downloading binary version to', os.path.join(TEMP_FILES, SPARK_TARFILE))
+    os.system(f'wget {SPARK_REMOTE_TAR} -P {TEMP_FILES}')
+
+@task(help={'filefolder': "Folder with all the configuration files", 'verbose': "Verbose output"})
+def update_spark_conf(ctx, filesfolder=FILE_PATH, verbose=False):
+    """
+    Upload spark configuration files. (if exist then it will update/overwrite them.)
+    Must contain files: 'spark-env.sh'
+    """
+    conffiles = ['spark-env.sh']
+    for conffile in conffiles:
+        local = os.path.join(filesfolder, conffile)
+        destinaiton = os.path.join(SPARK_INSTALL, 'conf', conffile)
+        if verbose:
+            print("Uploading", local, "to", destinaiton)
+        uploadfile(ctx, local, destinaiton, permission=True)
+    PiGroup.run(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {SPARK_INSTALL}/conf')
+    print("\nConfiguration updated! (remember to restart Spark to load the settings if your Spark is still running.)\n")
+
+@task(help={'verbose': "More detail of setup checking"})
+def install_spark(ctx, verbose=False):
+    """
+    Install Spark (current is Standalone mode)
+    0. Download Spark
+    1. Upload tar file, extract it and change owner to hadoop group and user
+    2. Setup environment variable in /etc/bash.bashrc
+    3. Install PySpark by pip
+    4. Copy configuration files to SPARK_INSTALL/conf
+    """
+    # Check and download spark
+    os.system(f'mkdir -p {TEMP_FILES}') # Generate in local
+    if not os.path.isfile(f'{TEMP_FILES}/{SPARK_TARFILE}'):
+        download_spark(ctx)
+
+    print("\n\n====== Upload", SPARK_TARFILE, "======")
+    for connection in PiGroup:
+        print("Connect to", connection)
+        if connection.run('test -d %s' % SPARK_INSTALL, warn=True).failed:
+            print("Did not find %s, uploading %s..." % (SPARK_INSTALL, SPARK_TARFILE))
+            connection.put(os.path.join(TEMP_FILES, SPARK_TARFILE), remote=REMOTE_UPLOAD)
+            print("Extracting tar file...")
+            connection.sudo('tar zxf %s -C %s' % (os.path.join(REMOTE_UPLOAD, SPARK_TARFILE), '/opt'))
+            print("Clean up tar file...")
+            connection.run('rm %s' % os.path.join(REMOTE_UPLOAD, SPARK_TARFILE))
+            print("Change owner...")
+            connection.sudo(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {SPARK_INSTALL}')
+        else:
+            print('Found %s, skip to next node' % SPARK_INSTALL)
+    
+    print("\n\n====== Setup environment variable ======")
+    bashrc_location = '/etc/bash.bashrc'
+    # use '# Hadoop Settings' as flag
+    bashrc_setting = f'''
+# Spark Settings
+export SPARK_HOME={SPARK_INSTALL}
+export PATH=$PATH:$SPARK_HOME/bin
+'''
+
+    for connection in PiGroup:
+        if connection.run("grep -Fxq '%s' %s" % ("# Spark Settings", bashrc_location), warn=True).failed:
+            print('No previous settings, append settings...')
+            append_line(ctx, bashrc_setting, bashrc_location) # This will append line to all the nodes
+            if verbose:
+                print('Tail of %s:' % bashrc_location)
+                connection.run("tail -n 4 %s" % bashrc_location) # check the settings
+            print('Applying changes...')
+            connection.run('source %s' % bashrc_location) # apply changes
+        else:
+            print('Setting already exist')
+
+        if verbose:    
+            print(" version:")
+            connection.run('spark-shell version')
+    
+    print("\n\n====== Install PySpark ======")
+
+    if PiGroup.run('python3 -c "import pyspark"', warn=True).failed:
+        print('Installing.... This may take a while...')
+        PiGroup.run("pip3 --no-cache-dir install pyspark")
+    else:
+        print('Already installed.')
+
+    print("\n\n====== Copy configure files ======")
+    update_spark_conf(ctx)
+    print("All files have updated!")
+
+    print("\n\n====== Set slaves on master ======")
+    slavesFile = f'{SPARK_INSTALL}/conf/slaves'
+    HadoopGroup[0].run('echo '' | tee %s' % (slavesFile))
+    for host in HOSTNAMES[1:]:
+        host += '.local'
+        # slaves
+        HadoopGroup[0].run('echo "%s" | tee -a %s' % (host, slavesFile))
+
+## Spark Unility Function
+
+@task
+def start_spark(ctx):
+    """
+    Start Spark
+    """
+    # Just run on master node
+    print("Starting spark...")
+    HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/start-all.sh')
+
+@task
+def stop_spark(ctx):
+    """
+    Stop Spark
+    """
+    # Just run on master node
+    print("Stopping spark...")
+    HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/stop-all.sh')
+
+@task
+def restart_spark(ctx):
+    """
+    Restart Spark
+    """
+    stop_spark(ctx)
+    start_spark(ctx)
+
+@task
+def status_spark(ctx):
+    """
+    Show Spark status
+    """
+    print('Spark Web Monitor: \thttp://%s:8080' % (getHosts(onlyAddress=True)[0]))
+
+@task
+def example_spark(ctx):
+    """
+    Run example on PySpark
+    """
+    sparkExampleDir = f'{SPARK_INSTALL}/examples/src/main/python'
+    uploadDir = f'/home/{HADOOP_USER}/sparkExample/wordCount'
+
+    def PI_example():
+        partitions = input('Partitions (default 100): ')
+        partitions = 100 if not partitions else int(partitions)
+        # found that default deploy mode is client mode
+        print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 --deploy-mode client {sparkExampleDir}/pi.py {partitions}')
+        HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 --deploy-mode client {sparkExampleDir}/pi.py {partitions}')
+
+    def Wordcount_example():
+        def spark_license():
+            print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
+            HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
+            
+        def local_file(useHDFS=False):
+            print('To be done.')
+            pass
+            # location = input('Where is your file? (file location): ')
+            # filename = os.path.basename(location)
+            # if useHDFS:
+            #     hdfsDir = '/hadoopExample/wordCount'
+            #     upload_hdfs(ctx, location, filename=filename, uploadDir=uploadDir, hdfsDir=hdfsDir)
+            # else:
+            #     HadoopGroup[0].put(location, remote=uploadDir)
+            #     HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit {sparkExampleDir}/wordcount.py {uploadDir}/{filename}')
+            #     clean = input('Clean up? (Y/n): ')
+            #     if clean not in ('n', 'N'):
+            #         HadoopGroup[0].sudo(f'sudo rm {uploadDir}/{filename}')
+        questionAsk({'Spark license': spark_license, 'Local file': local_file}, question='\nUse default Spark license or Local file?')
+
+    questionAsk({'PI': PI_example, 'Wordcount': Wordcount_example}, question="Select an Spark example")

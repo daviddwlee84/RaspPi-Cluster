@@ -59,11 +59,20 @@ fab status-hadoop # Monitor Hadoop behavior
 fab example-hadoop # If everything is done. You can play around with some hadoop official example
 ```
 
+#### Spark
+
+```sh
+fab install-spark
+```
+
+There are lots of utility function like I did for Hadoop. Check it out by `fab --list`
+
 ## Example
 
 Subject|Ecosystem|Purpose
 -------|---------|-------
 [MapReduce Practice](Example/MapReduce/)|Hadoop|MapReduce practice with Hadoop Streaming
+[Spark Practice](Example/SparkExample/)|Spark|
 
 ## Steps
 
@@ -84,6 +93,7 @@ A step by step record of how I build this system.
     * I've built some utility function first and then move on setup Hadoop
     * when any general purpose manipulation needed I'll add it.
 4. [Setup Hadoop](Tutorial/SetupHadoop.md)
+5. [Setup Spark](Tutorial/SetupSpark.md)
 5. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
 6. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
     * on Hadoop
