@@ -57,3 +57,7 @@ like Hadoop workers
 
 * [Official Website](https://spark.apache.org/)
 * [Spark Github](https://github.com/apache/spark)
+
+### Book
+
+* [Mastering Apache Spark](https://legacy.gitbook.com/book/jaceklaskowski/mastering-apache-spark/details)

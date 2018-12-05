@@ -996,18 +996,20 @@ def example_hadoop(ctx):
         HadoopGroup[0].run('%s/bin/hadoop jar %s/share/hadoop/mapreduce/hadoop-mapreduce-examples-%s.jar pi %d %d' % (HADOOP_INSTALL, HADOOP_INSTALL, HADOOP_VERSION, num_maps, samples))
 
     def Wordcount_example():
+        hdfsDir = '/hadoopExample/wordCount'
+        HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir -p {hdfsDir}')
         # Use default hadoop licence to test
         def hadoop_license():
             HadoopGroup[0].run('mkdir -p %s' % resultDir)
             try:
-                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm /license.txt /license-out')
+                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm {hdfsDir}/license.txt {hdfsDir}/license-out')
                 HadoopGroup[0].run('rm -r %s/license-out' % resultDir)
             except:
                 pass
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {HADOOP_INSTALL}/LICENSE.txt /license.txt')
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -ls /')
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount /license.txt /license-out')
-            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyToLocal /license-out {resultDir}/license-out')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {HADOOP_INSTALL}/LICENSE.txt {hdfsDir}/license.txt')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -ls {hdfsDir}')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount {hdfsDir}/license.txt {hdfsDir}/license-out')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyToLocal {hdfsDir}/license-out {resultDir}/license-out')
             print("Result:")
             HadoopGroup[0].run(f'head {resultDir}/license-out/part-r-00000')
             print("\n...\n")
@@ -1015,7 +1017,6 @@ def example_hadoop(ctx):
         def local_file():
             location = input('Where is your file? (file location): ')
             filename = os.path.basename(location)
-            hdfsDir = '/hadoopExample/wordCount'
             upload_hdfs(ctx, location, filename=filename, uploadDir=uploadDir, hdfsDir=hdfsDir)
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hadoop jar {HADOOP_INSTALL}/share/hadoop/mapreduce/hadoop-mapreduce-examples-{HADOOP_VERSION}.jar wordcount {hdfsDir}/{filename} {hdfsDir}/{filename}-out')
             print("Result:")
@@ -1215,6 +1216,16 @@ def example_spark(ctx):
         def spark_license():
             print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
             HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
+        
+        def spark_license_hdfs():
+            hdfsDir = '/sparkExample/wordCount'
+            try:
+                HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -rm {hdfsDir}/sparkLicense')
+            except:
+                pass
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir -p {hdfsDir}')
+            HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {SPARK_INSTALL}/LICENSE {hdfsDir}/sparkLicense')
+            HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py hdfs://{HOSTNAMES[0]}.local:9000/{hdfsDir}/sparkLicense')
             
         def local_file(useHDFS=False):
             print('To be done.')
@@ -1230,6 +1241,6 @@ def example_spark(ctx):
             #     clean = input('Clean up? (Y/n): ')
             #     if clean not in ('n', 'N'):
             #         HadoopGroup[0].sudo(f'sudo rm {uploadDir}/{filename}')
-        questionAsk({'Spark license': spark_license, 'Local file': local_file}, question='\nUse default Spark license or Local file?')
+        questionAsk({'Spark license': spark_license, 'Spark license (use HDFS)': spark_license_hdfs, 'Local file': local_file}, question='\nUse default Spark license or Local file?')
 
     questionAsk({'PI': PI_example, 'Wordcount': Wordcount_example}, question="Select an Spark example")
