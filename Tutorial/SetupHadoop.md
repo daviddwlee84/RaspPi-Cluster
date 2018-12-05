@@ -240,3 +240,5 @@ This is a zero-configuration protocol that works on LAN subnets. No server requi
     * [Part 3: Hadoop cluster setup, testing and final thoughts](https://medium.com/@jasonicarter/how-to-hadoop-at-home-with-raspberry-pi-part-3-7d114d35fdf1#.cn9da731k)
 * [Build a Hadoop 3 cluster with Raspberry Pi 3](https://medium.com/@oliver_hu/build-a-hadoop-3-cluster-with-raspberry-pi-3-f451b7f93254)
 * [Building a Hadoop cluster with Raspberry Pi](https://developer.ibm.com/recipes/tutorials/building-a-hadoop-cluster-with-raspberry-pi/)
+* [RPiCluster](https://bitbucket.org/jkiepert/rpicluster)
+    * [Demo](https://youtu.be/i_r3z1jYHAc)

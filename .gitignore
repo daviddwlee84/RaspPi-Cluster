@@ -1,2 +1,6 @@
+# Download temp dir
 temp_files/
+# The private ssh key
+connection/
+# VSCode
 .vscode/

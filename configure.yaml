@@ -1,0 +1,22 @@
+# Connection configuration for 4 nodes raspberrypi cluster
+NUM_NODES: 4 # set 1 if you only install on one raspberry pi
+Path:
+    FILE_PATH: ./Files # configure files
+    TEMP_FILES: ./temp_files # file download
+    SSH_KEY_PATH: ./connection # generated ssh key
+Connection:
+    HOST_IP:
+        - '192.168.1.105' # Master
+        - '192.168.1.103' # Slave1
+        - '192.168.1.110' # Slave2
+        - '192.168.1.102' # Slave3
+    Login:
+        USER: pi
+        PASSWORD: raspberry
+Hadoop:
+    Connection:
+        Login:
+            HADOOP_GROUP: hadoop
+            HADOOP_USER: hduser
+            HADOOP_PASSWORD: hadoop
+    

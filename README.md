@@ -84,6 +84,10 @@ A step by step record of how I build this system.
     * I've built some utility function first and then move on setup Hadoop
     * when any general purpose manipulation needed I'll add it.
 4. [Setup Hadoop](Tutorial/SetupHadoop.md)
+5. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
+6. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
+    * on Hadoop
+    * on Kubernetes
 
 ## Notes about distributed computing
 
@@ -102,12 +106,18 @@ Spark
 
 Kubernetes
 
+Distributed Tensorflow
+
 ## TODO
 
-* Expand to support any other Debian/Unix system
-* Better switch between multiple configuration files for multi-server
+* [X] Expand to support any other Debian/Unix system
+* [X] Better switch between multiple configuration files for multi-server
+    * Use *.yaml
 * More friendly Document
 * Hadoop utility function introduction
 * Dynamic Configure based on different hardware and maybe GUI and save multiple settings
     * Set up hardware detail e.g. RAM size
     * Read and write *.xml
+* list some alterative note
+    * pdsh == fab CMD
+    * ssh-copy-id == ssh-config

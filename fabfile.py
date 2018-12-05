@@ -13,41 +13,64 @@ from os.path import expanduser # home dir
 import getpass # password input
 from enum import Enum
 
+# yaml
+import yaml
+
 class connection_mode(Enum):
     IP = True
     HOSTNAME = False
 
 #############################
-#       User Setting        #
+#   Load From YMAL Config   #
 #############################
 
+# It's very convenient to save multiple configuration files and keys and configures
+# To switch between different server (if you have multiple server)
+# (The value in parenthesis means the default value in my case)
+
+# path to yaml connection configuration file
+YAML_CONF = './configure.yaml'
+
+if YAML_CONF:
+    with open(YAML_CONF, 'r') as stream:
+        yamldict = yaml.load(stream)
+
 # Local file path
-FILE_PATH = './Files' # configure files
-TEMP_FILES = './temp_files' # file download, generated ssh key etc.
 
-# === Connection Settings === #
+FILE_PATH = yamldict['Path']['FILE_PATH'] # configure files ('./Files')
+TEMP_FILES = yamldict['Path']['TEMP_FILES'] # file download ('./temp_files')
+SSH_KEY_PATH = yamldict['Path']['SSH_KEY_PATH'] # generated ssh key ('./connection')
 
-NUM_NODES = 4
+# Connection Settings
+
+NUM_NODES = yamldict['NUM_NODES'] # (4)
 
 # Host IP
-HOSTS_IP = [
-    '192.168.1.105', # Master
-    '192.168.1.103', # Slave1
-    '192.168.1.110', # Slave2
-    '192.168.1.102', # Slave3
-]
+HOSTS_IP = yamldict['Connection']['HOST_IP']
+
+# Default user and password
+USER = yamldict['Connection']['Login']['USER'] # (pi)
+PASSWORD = yamldict['Connection']['Login']['PASSWORD'] # (password)
+
+# Hadoop
+HADOOP_GROUP = yamldict['Hadoop']['Connection']['Login']['HADOOP_GROUP'] # Hadoop group name ('hadoop')
+HADOOP_USER = yamldict['Hadoop']['Connection']['Login']['HADOOP_USER'] # Hadoop user name ('hduser')
+HADOOP_PASSWORD = yamldict['Hadoop']['Connection']['Login']['HADOOP_PASSWORD'] # Hadoop user password ('hadoop')
+
+#############################
+#       User Settings       #
+#############################
+
+# === Connection Settings === #
 
 # Hostname
 slavenames = ['slave%i' % (i) for i in range(1, NUM_NODES)]
 HOSTNAMES = ['master'] + slavenames
 
-# Default user and password
-USER = 'pi'
-PASSWORD = 'raspberry'
-
 # Default SSH Private Key path
 # if you're using server you've already generate key for it
-DEFAULT_SSHKEY = f'{TEMP_FILES}/id_rsa'
+# you can change this path manually
+DEFAULT_SSHKEY = f'{SSH_KEY_PATH}/id_rsa'
 
 # Connection mode
 # USE connection_mode.IP MODE BEFORE YOU SETUP HOSTNAME
@@ -64,14 +87,12 @@ HADOOP_VERSION = '3.1.1'
 #HADOOP_MIRROR = 'http://ftp.mirror.tw/pub/apache/hadoop/common' # Taiwan mirror
 HADOOP_MIRROR = 'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common' # China Tsinghua mirror
 
-HADOOP_GROUP = 'hadoop' # Hadoop group name
-HADOOP_USER = 'hduser' # Hadoop user name
-HADOOP_PASSWORD = 'hadoop' # Hadoop user password
+# Location for hadoop SSH key
+HADOOP_SSH_KEY_PATH = f'{SSH_KEY_PATH}/hadoopSSH'
 
 ######### Some process #######
 # Generally you don't need to modify things here
 # unless you clearly understand the dependencies (e.g. hadoop config xml)
-
 
 # Hadoop
 HADOOP_TARFILE = f'hadoop-{HADOOP_VERSION}.tar.gz'
@@ -113,7 +134,7 @@ HadoopConfig = Config(overrides={'sudo': {'password': HADOOP_PASSWORD}})
 # Parallel Group
 PiGroup = ThreadingGroup(*getHosts(user=USER), connect_kwargs={'password': PASSWORD, 'key_filename': DEFAULT_SSHKEY}, config=PiConfig)
 # For hadoop user
-HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{TEMP_FILES}/hadoopSSH/id_rsa'}, config=HadoopConfig)
+HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{SSH_KEY_PATH}/hadoopSSH/id_rsa'}, config=HadoopConfig)
 
 #############################
 #       Helper Function     #
@@ -163,9 +184,43 @@ def node_ls(ctx, actual=False):
             print("The %d node's hostname and IP" % num_node)
             connection.run('hostname && hostname -I')
     else:
+        print('Current connection mode is', CONN_MODE)
         print('Node list:')
-        print(getHosts(mode=connection_mode.IP))
-        print(getHosts(mode=connection_mode.HOSTNAME))
+        print(getHosts(mode=CONN_MODE))
+        print("\n ps. use '-a' flag to show the actual IP return from each nodes")
+
+@task
+def show_config(ctx):
+    """
+    Print all current configurations
+    """
+    # Use capital letter same as the variable means
+    # it's load from yaml configure file or important hard-code in fabfile.py
+    # Use lower-case letter means the variable
+    # was been calculated by other variable (i.e. has some dependencies)
+    current_config = f"""
+    \rNodes:
+    \r\tNUM_NODES = {NUM_NODES}
+
+    \rPath:
+    \r\tFILE_PATH = {FILE_PATH}
+    \r\tTEMP_FILES = {TEMP_FILES}
+    \r\tSSH_KEY_PATH = {SSH_KEY_PATH}
+    
+    \rConnection:
+    \r\tHOST_IP = {HOSTS_IP}
+    \r\tHOSTNAMES = {HOSTNAMES}
+    \r\tUSER = {USER}, PASSWORD = {PASSWORD}
+    \r\tCONN_MODE = {CONN_MODE}
+    \r\tssh key location = {DEFAULT_SSHKEY}
+    
+    \rHadoop:
+    \r\tHADOOP_VERSION = {HADOOP_VERSION}
+    \r\tHADOOP_USER = {HADOOP_USER}, HADOOP_PASSWORD = {HADOOP_PASSWORD}, HADOOP_GROUP = {HADOOP_GROUP}
+    \r\tHADOOP_SSH_KEY_PATH = {HADOOP_SSH_KEY_PATH}
+    \r\tssh key location = {HADOOP_SSH_KEY_PATH}
+    """
+    print(current_config)
 
 @task(help={'command': "Command you want to sent to host", 'verbose': "Verbose output", 'node-num': "Node number of HOSTS list"})
 def CMD(ctx, command, verbose=False, node_num=-1):
@@ -285,7 +340,7 @@ def ssh_connect(ctx, node_num, hadoop=False, private_key=DEFAULT_SSHKEY):
     """
     if hadoop:
         user = HADOOP_USER
-        private_key=f'{TEMP_FILES}/hadoopSSH/id_rsa'
+        private_key=f'{HADOOP_SSH_KEY_PATH}/id_rsa'
     else:
         user = USER
         if private_key != DEFAULT_SSHKEY:
@@ -351,18 +406,42 @@ def update_and_upgrade(ctx, uncommit=False):
         comment_line(ctx, UNCOMMENT_URL, sources_list, uncomment=True, verbose=True)
     CMD_parallel(ctx, 'sudo apt-get update -y && sudo apt-get upgrade -y')
 
-@task
-def env_setup(ctx):
+@task(help={'install-package': "Packages you want to install, seperate by ',' in a string"})
+def env_setup(ctx, install_package=""):
     """
     Environment setup
     """
-    to_install = ['git', 'vim', 'tmux']
+    if not install_package: # default install
+        to_install = ['git', 'vim', 'tmux', 'zsh']
+    else:
+        to_install = [x.strip() for x in install_package.split(',')]
+
     for connection in PiGroup:
-        if connection.run('which java', warn=True).failed: # Java
+        if not install_package and connection.run('which java', warn=True).failed: # Java
             to_install.append('oracle-java8-jdk')
 
-        print("Install %s" %(' '.join(to_install)))
+        print("Install %s" % (' '.join(to_install)))
         connection.sudo('sudo apt-get -y install %s' % (' '.join(to_install)))
+
+@task
+def favorite_devenv(ctx, masterOnly=False):
+    """
+    Install oh-my-zsh, vim and tmux powerline theme on Master node
+    """
+    connection = connect(0) # Master
+
+    print("Installing basic environment")
+    env_setup(ctx) # git vim tmux zsh
+
+    zshInstallPassword = Responder(
+        pattern=r'password',
+        response=PASSWORD+'\n',
+    )
+    print("Installing oh-my-zsh")
+    connection.run('sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"',
+                    pty=True, watchers=[zshInstallPassword])
+    #TODO
+    
 
 ### Quick Setup
 
@@ -430,26 +509,26 @@ def ssh_config(ctx):
     Set up SSH keys for all pi@ user
     """
     # If ssh key doesn't exist in TEMP_FILES folder then generate one
-    os.system(f'mkdir -p {TEMP_FILES}')
-    if not os.path.isfile(f'{TEMP_FILES}/id_rsa'):
+    os.system(f'mkdir -p {SSH_KEY_PATH}')
+    if not os.path.isfile(f'{SSH_KEY_PATH}/id_rsa'):
         try:
             # Remove remote ssh key (make sure it's the same version)
             CMD_parallel(ctx, "rm .ssh/id_rsa*")
         except:
             print('Already clean')
         # Generate ssh key
-        os.system(f"ssh-keygen -t rsa -b 4096 -N '' -C 'cluster user key' -f {TEMP_FILES}/id_rsa")
+        os.system(f"ssh-keygen -t rsa -b 4096 -N '' -C 'cluster user key' -f {SSH_KEY_PATH}/id_rsa")
         newkeygen = True
     else:
         newkeygen = False
     
     # Upload ssh key
     CMD_parallel(ctx, 'mkdir -p -m 0700 .ssh')
-    uploadfile(ctx, f'{TEMP_FILES}/id_rsa', '.ssh', verbose=True)
-    uploadfile(ctx, f'{TEMP_FILES}/id_rsa.pub', '.ssh', verbose=True)
+    uploadfile(ctx, f'{SSH_KEY_PATH}/id_rsa', '.ssh', verbose=True)
+    uploadfile(ctx, f'{SSH_KEY_PATH}/id_rsa.pub', '.ssh', verbose=True)
 
     # Append 
-    with open(f'{TEMP_FILES}/id_rsa.pub', 'r') as pubkeyfile:
+    with open(f'{SSH_KEY_PATH}/id_rsa.pub', 'r') as pubkeyfile:
         pubkey = pubkeyfile.read()
         for connection in PiGroup:
             connection.run('touch .ssh/authorized_keys')
@@ -491,14 +570,6 @@ def change_passwd(ctx, user, old=False):
         )
         for connection in PiGroup:
             connection.sudo('sudo passwd %s' % user, pty=True, watchers=[newResponder])
-
-@task
-def install_dev_env(ctx):
-    """
-    Install the best development environment
-    (vim, oh-my-zsh, tmux and powerline theme)
-    """
-    pass
 
 ### Hadoop
 
@@ -596,11 +667,11 @@ def install_hadoop(ctx, verbose=False):
         connection.run(f'groups {HADOOP_USER}')
 
     print("\n\n====== Generate ssh key =======")
-    os.system(f'mkdir -p {TEMP_FILES}/hadoopSSH') # Generate in local
-    if not os.path.isfile(f'{TEMP_FILES}/hadoopSSH/id_rsa'):
-        print(f"Generating hadoop key in {TEMP_FILES}/hadoopSSH")
-        os.system(f'ssh-keygen -t rsa -P "" -f {TEMP_FILES}/hadoopSSH/id_rsa')
-        os.system(f'cat {TEMP_FILES}/hadoopSSH/id_rsa.pub > {TEMP_FILES}/hadoopSSH/authorized_keys')
+    os.system(f'mkdir -p {HADOOP_SSH_KEY_PATH}') # Generate in local
+    if not os.path.isfile(f'{HADOOP_SSH_KEY_PATH}/id_rsa'):
+        print(f"Generating hadoop key in {HADOOP_SSH_KEY_PATH}")
+        os.system(f'ssh-keygen -t rsa -P "" -f {HADOOP_SSH_KEY_PATH}/id_rsa')
+        os.system(f'cat {HADOOP_SSH_KEY_PATH}/id_rsa.pub > {HADOOP_SSH_KEY_PATH}/authorized_keys')
     else:
         print("Hadoop ssh key already generated")
 
@@ -609,9 +680,9 @@ def install_hadoop(ctx, verbose=False):
         connection.sudo(f'sudo mkdir -p /home/{HADOOP_USER}/.ssh')
         # Remove remote ssh key (make sure it's the same version)
         connection.sudo(f'sudo rm /home/{HADOOP_USER}/.ssh/id_rsa* /home/{HADOOP_USER}/.ssh/authorized_keys', warn=True, hide=True)
-    uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/id_rsa', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
-    uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/id_rsa.pub', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
-    uploadfile(ctx, f'{TEMP_FILES}/hadoopSSH/authorized_keys', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
+    uploadfile(ctx, f'{HADOOP_SSH_KEY_PATH}/id_rsa', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
+    uploadfile(ctx, f'{HADOOP_SSH_KEY_PATH}/id_rsa.pub', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
+    uploadfile(ctx, f'{HADOOP_SSH_KEY_PATH}/authorized_keys', destination=f'/home/{HADOOP_USER}/.ssh', permission=True)
     CMD_parallel(ctx, f'sudo chown {HADOOP_USER}:{HADOOP_GROUP} /home/{HADOOP_USER}/.ssh -R')
 
     print("\n\n====== Upload", HADOOP_TARFILE, "======")
