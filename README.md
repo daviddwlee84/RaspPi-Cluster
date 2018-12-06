@@ -15,7 +15,7 @@ And try to write a quick start script for them. And maybe some example demo.
 
 ### Quick Start
 
-First check user setting in [fabfile.py](fabfile.py) (Important!) ([Connection Setting Example](Documentation/ConnectionSetting.md))
+Important!!. First check user settings in [`configure.yaml`](configure.yaml), (for deeper settings check out [`fabfile.py`](fabfile.py) User Settings part)
 
 ```sh
 # Install local dependencies

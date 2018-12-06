@@ -610,9 +610,11 @@ def expand_swap(ctx, size=1024):
     print("Setting SWAP to %d MB" % size)
     swap_conf_file = '/etc/dphys-swapfile'
     find_and_replace(ctx, r'^CONF_SWAPSIZE=.*', 'CONF_SWAPSIZE=%d' % size, swap_conf_file)
-    PiGroup.run('sudo /etc/init.d/dphys-swapfile stop')
-    PiGroup.run('sudo /etc/init.d/dphys-swapfile start')
+    PiGroup.run('sudo /etc/init.d/dphys-swapfile stop') # sudo dphys-swapfile swapoff
+    PiGroup.run('sudo /etc/init.d/dphys-swapfile start') # sudo dphys-swapfile swapon
     CMD_parallel(ctx, 'free -m', verbose=True)
+    # free -m | grep -e "^Mem:" | awk '{print $2}'
+    # free -m | grep -e "^Swap:" | awk '{print $2}'
 
 ### Hadoop
 

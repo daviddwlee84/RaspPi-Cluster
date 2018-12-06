@@ -1,1 +1,2 @@
 fabric==2.*
+pyyaml
