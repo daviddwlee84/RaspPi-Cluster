@@ -29,6 +29,24 @@ Hadoop provides a streaming API which supports any programming language that can
 * Hadoop provides an API to MapReduce that allows you to write your map and reduce functions in languages other than Java!
 * Hadoop Streaming use Unix standard streams as the interface between Hadoop and your program, so you can use any language that can read standard input and write to standard output to write your MapReduce program.
 
+**Little trick** (set in `~/.bashrc` of hadoop user)
+
+```sh
+run_mapreduce() {
+    hadoop jar $HADOOP_HOME/contrib/streaming/hadoop-*streaming*.jar -mapper $1 -reducer $2 -file $1 -file $2 -input $3 -output $4
+}
+
+alias hs=run_mapreduce
+```
+
+then you can use it
+
+```sh
+hs mapper.py reducer.py hdfs_data_in hdfs_data_out
+```
+
+* "hdfs_data_out" is the output data folder, it is important that this folder doesn't already exist
+
 ## Book
 
 Hadoop - The Definitive Guide

@@ -2,11 +2,17 @@
 
 ## Introduction
 
+![MapReduce wordcount](https://www3.nd.edu/~pbui/teaching/cse.30331.fa16/static/img/mapreduce-wordcount.png)
+
 ## Character
 
 ### Mapper
 
 ### Combiner
+
+* it is optional, to lighten the work load for reducer.
+
+### Partition
 
 ### Reducer
 

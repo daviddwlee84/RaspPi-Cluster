@@ -7,6 +7,9 @@ Practice|Detail|Reference
 [Word count](#Word-Count)|Simple word count and generator version example|[link](https://www.michael-noll.com/tutorials/writing-an-hadoop-mapreduce-program-in-python/)
 [Daily exchange rate](#Daily-Exchange-Rate)|Output currency FX change day to day as a percentage|[link](https://medium.com/@rrfd/your-first-map-reduce-using-hadoop-with-python-and-osx-ca3b6f3dfe78)
 [Word count and Text mining](#Word-Count-and-Text-Mining)|Two example: word count with combine step and simple NLP|[link](https://researchcomputing.princeton.edu/computational-hardware/hadoop/mapred-tut)
+[Sparse Matrix Multiplication](#Sparse-Matrix-Multiplication)|Calculate sparse matrix multiplication|
+Document Similarity Comparison|Calculate similaritiy and keep value above the threshold|
+Big Database Table Join|Mechanism of NoSQL database join|
 
 ## Word Count
 
@@ -128,3 +131,7 @@ $ bash download_NLTK.sh
 # Analysis (we'll use the data in the last example above)
 $ cat ../WordCountCombine/data/44604.txt.utf-8 | python3 mapper.py | python3 reducer.py
 ```
+
+## Sparse Matrix Multiplication
+
+[Matrix to Sparse matrix util](SparseMatrixMultiplication/matrixUtil.py)

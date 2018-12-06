@@ -82,6 +82,7 @@ Subject|Ecosystem|Purpose
 -------|---------|-------
 [MapReduce Practice](Example/MapReduce/)|Hadoop|MapReduce practice with Hadoop Streaming
 [Spark Practice](Example/SparkExample/)|Spark|
+[Inverted Index](Example/InvertedIndex/)||Focus on multiple inverted index strategy for search
 
 ## Steps
 
@@ -114,6 +115,10 @@ Algorithm
 
 * [MapReduce](Notes/Distributed_Computing/MapReduce.md)
 
+Links
+
+* [Chameleon Cloud Training](https://cloudandbigdatalab.github.io/)
+
 ## Notes about specific ecosystem
 
 [Hadoop](Notes/Hadoop/Hadoop.md)
@@ -128,6 +133,8 @@ Algorithm
 Distributed Tensorflow
 
 [Elasticsearch](Notes/Elasticsearch/Elasticsearch.md)
+
+[RediSearch](Notes/RediSearch/RediSearch.md)
 
 ## TODO
 
