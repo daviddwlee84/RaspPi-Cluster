@@ -65,6 +65,10 @@ export SPARK_MASTER_PORT=7077 # default
 export SPARK_WORKER_CORES=4
 export SPARK_WORKER_MEMORY=512m
 
+#export SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=hdfs://master.local:9000/spark-event-log/"
+#export SPARK_HISTORY_OPTS="-Dspark.history.fs.logDirectory=file:///tmp/spark-events" # Default value
+
+
 # Generic options for the daemons used in the standalone deploy mode
 # - SPARK_CONF_DIR      Alternate conf dir. (Default: ${SPARK_HOME}/conf)
 # - SPARK_LOG_DIR       Where log files are stored.  (Default: ${SPARK_HOME}/logs)
@@ -76,5 +80,7 @@ export SPARK_WORKER_MEMORY=512m
 # You might get better performance to enable these options if using native BLAS (see SPARK-21305).
 # - MKL_NUM_THREADS=1        Disable multi-threading of Intel MKL
 # - OPENBLAS_NUM_THREADS=1   Disable multi-threading of OpenBLAS
+
+#export SPARK_IDENT_STRING=hduser
 
 export PYSPARK_PYTHON=python3

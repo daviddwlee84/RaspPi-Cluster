@@ -13,6 +13,10 @@ Connection:
     Login:
         USER: pi
         PASSWORD: raspberry
+    CONN_MODE: HOSTNAME # Enter either 'IP' or 'HOSTNAME'
+    # USE IP MODE BEFORE YOU SETUP HOSTNAME FOR EACH NODE (you can use my "set-hostname" function)
+    # OR MODIFY hard-coded 'master' to 'raspberrypi' in fabfile.py (WHICH IS DEFAULT HOSTNAME FOR RASPBERRY PI)
+    # IF YOU ONLY RUN ON SINGLE NODE
 Hadoop:
     Connection:
         Login:

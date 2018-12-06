@@ -51,7 +51,13 @@ like Hadoop workers
 
 ## Submit Application
 
-[Submitting Applications](https://spark.apache.org/docs/latest/submitting-applications.html)
+[Spark - Submitting Applications](https://spark.apache.org/docs/latest/submitting-applications.html)
+
+## Job History
+
+* [Spark - Monitoring and Instrumentation](https://spark.apache.org/docs/latest/monitoring.html)
+* [Mastering Apache Spark - Spark History Server](https://jaceklaskowski.gitbooks.io/mastering-apache-spark/spark-history-server.html)
+* [IBM - Enabling the Spark History service](https://www.ibm.com/support/knowledgecenter/en/SSGSMK_7.1.1/management_sym/spark_configuring_history_service.html)
 
 ## Links
 

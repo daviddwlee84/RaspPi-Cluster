@@ -42,7 +42,6 @@ TEMP_FILES = yamldict['Path']['TEMP_FILES'] # file download ('./temp_files')
 SSH_KEY_PATH = yamldict['Path']['SSH_KEY_PATH'] # generated ssh key ('./connection')
 
 # Connection Settings
-
 NUM_NODES = yamldict['NUM_NODES'] # (4)
 
 # Host IP
@@ -51,6 +50,12 @@ HOSTS_IP = yamldict['Connection']['HOST_IP']
 # Default user and password
 USER = yamldict['Connection']['Login']['USER'] # (pi)
 PASSWORD = yamldict['Connection']['Login']['PASSWORD'] # (password)
+
+# Connection mode
+if yamldict['Connection']['CONN_MODE'] == 'HOSTNAME':
+    CONN_MODE = connection_mode.HOSTNAME
+else:
+    CONN_MODE = connection_mode.IP
 
 # Hadoop
 HADOOP_GROUP = yamldict['Hadoop']['Connection']['Login']['HADOOP_GROUP'] # Hadoop group name ('hadoop')
@@ -72,11 +77,6 @@ HOSTNAMES = ['master'] + slavenames
 # you can change this path manually
 DEFAULT_SSHKEY = f'{SSH_KEY_PATH}/id_rsa'
 
-# Connection mode
-# USE connection_mode.IP MODE BEFORE YOU SETUP HOSTNAME
-# OR MODIFY 'master' ABOVE TO 'raspberrypi' (WHICH IS DEFAULT HOSTNAME FOR RASPBERRY PI)
-# IF YOU ONLY RUN ON SINGLE NODE
-CONN_MODE = connection_mode.HOSTNAME
 # =========================== #
 
 # Default upload remote directory
@@ -819,6 +819,8 @@ export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
     # I just leave user to select Y or N in case of accidentally reformat it
     HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs namenode -format')
 
+    print('\nHadoop installed successfully!!')
+
 @task(help={'location': "Location of Hadoop source folder", 'build-protobuf': "Build Protocol Buffers from github source code"})
 def build_hadoop(ctx, location=HADOOP_BUILD, build_protobuf=False):
     """
@@ -1075,9 +1077,9 @@ def download_spark(ctx):
 def update_spark_conf(ctx, filesfolder=FILE_PATH, verbose=False):
     """
     Upload spark configuration files. (if exist then it will update/overwrite them.)
-    Must contain files: 'spark-env.sh'
+    Must contain files: 'spark-env.sh', 'spark-defaults.conf', 'log4j.properties'
     """
-    conffiles = ['spark-env.sh']
+    conffiles = ['spark-env.sh', 'spark-defaults.conf', 'log4j.properties']
     for conffile in conffiles:
         local = os.path.join(filesfolder, conffile)
         destinaiton = os.path.join(SPARK_INSTALL, 'conf', conffile)
@@ -1096,6 +1098,8 @@ def install_spark(ctx, verbose=False):
     2. Setup environment variable in /etc/bash.bashrc
     3. Install PySpark by pip
     4. Copy configuration files to SPARK_INSTALL/conf
+    5. Set slaves on master
+    6. Mkdir for Spark Job History log
     """
     # Check and download spark
     os.system(f'mkdir -p {TEMP_FILES}') # Generate in local
@@ -1144,11 +1148,14 @@ export PATH=$PATH:$SPARK_HOME/bin
     
     print("\n\n====== Install PySpark ======")
 
-    if PiGroup.run('python3 -c "import pyspark"', warn=True).failed:
+    try:
+        PiGroup.run('python3 -c "import pyspark"')
+    except:
         print('Installing.... This may take a while...')
+        # If this goes too slow in China. Use "add-source" beforehand
         PiGroup.run("pip3 --no-cache-dir install pyspark")
-    else:
-        print('Already installed.')
+    finally:
+        print('Already installed!')
 
     print("\n\n====== Copy configure files ======")
     update_spark_conf(ctx)
@@ -1157,10 +1164,25 @@ export PATH=$PATH:$SPARK_HOME/bin
     print("\n\n====== Set slaves on master ======")
     slavesFile = f'{SPARK_INSTALL}/conf/slaves'
     HadoopGroup[0].run('echo '' | tee %s' % (slavesFile))
-    for host in HOSTNAMES[1:]:
-        host += '.local'
-        # slaves
-        HadoopGroup[0].run('echo "%s" | tee -a %s' % (host, slavesFile))
+    for node_num, host in enumerate(HOSTNAMES):
+        if NUM_NODES == 1 and node_num == 0:
+            # Add itself as worker when you have only single node
+            # MAKE SURE YOU'VE CHANGE "SPARK_EXECUTOR_CORES" and "SPARK_WORKER_CORES"
+            # TO LESS THAN 4 FOR RASPBERRYPI (or all the process will be 100% and system will break)
+            HadoopGroup[0].run('echo "%s" | tee -a %s' % ('localhost', slavesFile))
+        else:
+            host += '.local'
+            # slaves
+            HadoopGroup[0].run('echo "%s" | tee -a %s' % (host, slavesFile))
+    
+    print("\n\n====== Make dir for Spark Job History logs =======")
+    # Setting set in spark-defaults.conf and spark-env.sh
+    #HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir /spark-event-log') # Start Hadoop first.
+
+    # Spark default folder
+    HadoopGroup[0].run(f'mkdir -p /tmp/spark-events')
+
+    print('\nSpark installed successfully!!')
 
 ## Spark Unility Function
 
@@ -1172,6 +1194,7 @@ def start_spark(ctx):
     # Just run on master node
     print("Starting spark...")
     HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/start-all.sh')
+    HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/start-history-server.sh')
 
 @task
 def stop_spark(ctx):
@@ -1181,6 +1204,7 @@ def stop_spark(ctx):
     # Just run on master node
     print("Stopping spark...")
     HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/stop-all.sh')
+    HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/stop-history-server.sh')
 
 @task
 def restart_spark(ctx):
@@ -1196,6 +1220,7 @@ def status_spark(ctx):
     Show Spark status
     """
     print('Spark Web Monitor: \thttp://%s:8080' % (getHosts(onlyAddress=True)[0]))
+    print('Spark Job History: \thttp://%s:18080' % (getHosts(onlyAddress=True)[0]))
 
 @task
 def example_spark(ctx):
@@ -1209,13 +1234,13 @@ def example_spark(ctx):
         partitions = input('Partitions (default 100): ')
         partitions = 100 if not partitions else int(partitions)
         # found that default deploy mode is client mode
-        print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 --deploy-mode client {sparkExampleDir}/pi.py {partitions}')
-        HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 --deploy-mode client {sparkExampleDir}/pi.py {partitions}')
+        print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 --deploy-mode client {sparkExampleDir}/pi.py {partitions}')
+        HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 --deploy-mode client {sparkExampleDir}/pi.py {partitions}')
 
     def Wordcount_example():
         def spark_license():
-            print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
-            HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
+            print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
+            HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
         
         def spark_license_hdfs():
             hdfsDir = '/sparkExample/wordCount'
@@ -1225,7 +1250,7 @@ def example_spark(ctx):
                 pass
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir -p {hdfsDir}')
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {SPARK_INSTALL}/LICENSE {hdfsDir}/sparkLicense')
-            HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{HOSTNAMES[0]}.local:7077 {sparkExampleDir}/wordcount.py hdfs://{HOSTNAMES[0]}.local:9000/{hdfsDir}/sparkLicense')
+            HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 {sparkExampleDir}/wordcount.py hdfs://{getHosts(onlyAddress=True)[0]}:9000/{hdfsDir}/sparkLicense')
             
         def local_file(useHDFS=False):
             print('To be done.')

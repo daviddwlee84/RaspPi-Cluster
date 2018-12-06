@@ -4,3 +4,5 @@ temp_files/
 connection/
 # VSCode
 .vscode/
+# My another rpi setting
+MyRpi
