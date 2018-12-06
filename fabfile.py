@@ -602,6 +602,18 @@ def change_passwd(ctx, user, old=False):
         for connection in PiGroup:
             connection.sudo('sudo passwd %s' % user, pty=True, watchers=[newResponder])
 
+@task(help={'size': 'Size you want to set for SWAP'})
+def expand_swap(ctx, size=1024):
+    """
+    Expand SWAP
+    """
+    print("Setting SWAP to %d MB" % size)
+    swap_conf_file = '/etc/dphys-swapfile'
+    find_and_replace(ctx, r'^CONF_SWAPSIZE=.*', 'CONF_SWAPSIZE=%d' % size, swap_conf_file)
+    PiGroup.run('sudo /etc/init.d/dphys-swapfile stop')
+    PiGroup.run('sudo /etc/init.d/dphys-swapfile start')
+    CMD_parallel(ctx, 'free -m', verbose=True)
+
 ### Hadoop
 
 ## Hadoop Setup

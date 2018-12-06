@@ -30,6 +30,7 @@ fab env-setup # Quick install basic utility function
 fab set-hostname # Set hostname for each node (will need to reboot)
 fab ssh-config # Generate ssh-key and setup to all nodes
 fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)
+fab expand-swap # Expand swap (default 1024MB use --size=MEMSIZE to match your need) (System default is 100MB)
 ```
 
 **Regular used function** (make sure you've generated ssh-key or move your ssh-key to `./connection/id_rsa`)
@@ -122,9 +123,11 @@ Algorithm
 
 [Spark](Notes/Spark/Spark.md)
 
-Kubernetes
+[Kubernetes](Notes/Kubernetes/Kubernetes.md)
 
 Distributed Tensorflow
+
+[Elasticsearch](Notes/Elasticsearch/Elasticsearch.md)
 
 ## TODO
 
