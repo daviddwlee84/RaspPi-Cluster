@@ -4,6 +4,8 @@
 
 > Current version of Spark natively contain pre-built Scala binary.
 
+Current installation process is for [Spark Standalone Mode](https://spark.apache.org/docs/latest/spark-standalone.html)
+
 ## Download spark
 
 ```sh

@@ -3,6 +3,8 @@
 The following tutorial I will use a four node Raspberry Pi Cluster for an example.
 
 > (And I'll use my preferred selection between many similar options.)
+>
+> i.e. the memory allocation settings is fit for Raspberry Pi 3 with 1G RAM
 
 After setting up the environment, I'll implement some popular distributed computing ecosystem on it.
 And try to write a quick start script for them. And maybe some example demo.
@@ -30,7 +32,7 @@ fab ssh-config # Generate ssh-key and setup to all nodes
 fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)
 ```
 
-**Regular used function** (make sure you've generated ssh-key or move your ssh-key to `./temp_files/id_rsa`)
+**Regular used function** (make sure you've generated ssh-key or move your ssh-key to `./connection/id_rsa`)
 
 ```sh
 fab ssh-connect NODE_NUM # Connect to any node by it's index without password (use -h flag to be hadoop user)
@@ -39,13 +41,16 @@ fab uploadfile file_or_dir -s -p # Upload file or folder to remote (specific nod
 
 #### Hadoop
 
-If you changed default hostname in fabfile.py. Make sure you also change in hadoop configuraiton file in ./Files.
+If you changed default hostname in `fabfile.py` or `configure.yaml`.
+Make sure you also changed the Hadoop configuraiton file in ./Files.
 
 ```sh
 fab install-hadoop # An one button setup for hadoop environment on all nodes!!!
 
 fab update-hadoop-conf # Every time you update configure file in local you can update it to all nodes at once
 ```
+
+(the key of Hadoop user is store in `./connection/hadoopSSH`)
 
 Utility function
 
@@ -60,6 +65,9 @@ fab example-hadoop # If everything is done. You can play around with some hadoop
 ```
 
 #### Spark
+
+If you changed default hostname in `fabfile.py` or `configure.yaml`.
+Make sure you also changed the Spark configuraiton file in ./Files.
 
 ```sh
 fab install-spark
@@ -94,8 +102,8 @@ A step by step record of how I build this system.
     * when any general purpose manipulation needed I'll add it.
 4. [Setup Hadoop](Tutorial/SetupHadoop.md)
 5. [Setup Spark](Tutorial/SetupSpark.md)
-5. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
-6. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
+6. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
+7. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
     * on Hadoop
     * on Kubernetes
 
@@ -112,7 +120,7 @@ Algorithm
 * [HDFS](Notes/Hadoop/HDFS.md)
 * [YARN](Notes/Hadoop/YARN.md)
 
-Spark
+[Spark](Notes/Spark/Spark.md)
 
 Kubernetes
 
