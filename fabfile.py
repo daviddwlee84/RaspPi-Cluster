@@ -165,7 +165,10 @@ def connect(node_num, user=USER, password=PASSWORD, private_key_path=DEFAULT_SSH
     """
     Get Single Conneciton to node
     """
-    return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password, 'key_filename': private_key_path}, config=configure)
+    if DISABLE_SSH_KEY:
+        return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password}, config=configure)
+    else:
+        return Connection(getHosts(user=user, mode=conn_mode)[int(node_num)], connect_kwargs={'password': password, 'key_filename': private_key_path}, config=configure)
 
 def questionAsk(questionDict, question=None):
     """

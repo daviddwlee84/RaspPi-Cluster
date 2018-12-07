@@ -17,9 +17,9 @@ Connection:
     # USE IP MODE BEFORE YOU SETUP HOSTNAME FOR EACH NODE (you can use my "set-hostname" function)
     # OR MODIFY hard-coded 'master' to 'raspberrypi' in fabfile.py (WHICH IS DEFAULT HOSTNAME FOR RASPBERRY PI)
     # IF YOU ONLY RUN ON SINGLE NODE
-    DISABLE_SSH_KEY: FALSE
-    # If you didn't bind ssh-key for your server (e.g. Aliyun). Use FALSE.
-    # If your server need ssh-key beforhand (e.g. GCP, AWS). Use TRUE.
+    DISABLE_SSH_KEY: TRUE
+    # If you didn't bind ssh-key for your server (e.g. Aliyun). Use TRUE.
+    # If your server need ssh-key beforhand (e.g. GCP, AWS). Use FALSE.
     # And make sure you've put the key under the SSH_KEY_PATH or you can modify DEFAULT_SSHKEY in fabfile.py directly.
 Hadoop:
     Connection:
