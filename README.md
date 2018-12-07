@@ -76,6 +76,14 @@ fab install-spark
 
 There are lots of utility function like I did for Hadoop. Check it out by `fab --list`
 
+#### Jupyter Notebook with PySpark
+
+This will be installed with Hadoop user
+
+```sh
+fab install-jupyter
+```
+
 ## Example
 
 Subject|Ecosystem|Purpose

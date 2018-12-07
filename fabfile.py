@@ -1310,8 +1310,10 @@ def install_jupyter(ctx):
     connection.sudo('sudo pip3 install jupyter findspark')
 
     bashrc_location = '/etc/bash.bashrc'
+    #masterHost = getHosts(onlyAddress=True)[0]
+    masterHost = getHosts(mode=connection_mode.HOSTNAME, onlyAddress=True)[0] # Force to use hostname
+    
     # use '# PySpark with Jupyter Notebook' as flag
-    masterHost = getHosts(onlyAddress=True)[0]
     bashrc_setting = f'''
 # PySpark with Jupyter Notebook
 export PYSPARK_DRIVER_PYTHON=jupyter
