@@ -57,6 +57,9 @@ if yamldict['Connection']['CONN_MODE'] == 'HOSTNAME':
 else:
     CONN_MODE = connection_mode.IP
 
+# Use SSH key to send fabric command or not
+DISABLE_SSH_KEY = yamldict['Connection']['DISABLE_SSH_KEY'] # (FALSE)
+
 # Hadoop
 HADOOP_GROUP = yamldict['Hadoop']['Connection']['Login']['HADOOP_GROUP'] # Hadoop group name ('hadoop')
 HADOOP_USER = yamldict['Hadoop']['Connection']['Login']['HADOOP_USER'] # Hadoop user name ('hduser')
@@ -143,9 +146,16 @@ PiConfig = Config(overrides={'sudo': {'password': PASSWORD}})
 HadoopConfig = Config(overrides={'sudo': {'password': HADOOP_PASSWORD}})
 
 # Parallel Group
-PiGroup = ThreadingGroup(*getHosts(user=USER), connect_kwargs={'password': PASSWORD, 'key_filename': DEFAULT_SSHKEY}, config=PiConfig)
-# For hadoop user
-HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{SSH_KEY_PATH}/hadoopSSH/id_rsa'}, config=HadoopConfig)
+if DISABLE_SSH_KEY:
+    # For normal user
+    PiGroup = ThreadingGroup(*getHosts(user=USER), connect_kwargs={'password': PASSWORD}, config=PiConfig)
+    # For hadoop user
+    HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER), connect_kwargs={'password': HADOOP_PASSWORD}, config=HadoopConfig)
+else:
+    # For normal user
+    PiGroup = ThreadingGroup(*getHosts(user=USER), connect_kwargs={'password': PASSWORD, 'key_filename': DEFAULT_SSHKEY}, config=PiConfig)
+    # For hadoop user
+    HadoopGroup = ThreadingGroup(*getHosts(user=HADOOP_USER), connect_kwargs={'password': HADOOP_PASSWORD, 'key_filename': f'{HADOOP_SSH_KEY_PATH}/id_rsa'}, config=HadoopConfig)
 
 #############################
 #       Helper Function     #
@@ -223,6 +233,7 @@ def show_config(ctx):
     \r\tHOSTNAMES = {HOSTNAMES}
     \r\tUSER = {USER}, PASSWORD = {PASSWORD}
     \r\tCONN_MODE = {CONN_MODE}
+    \r\tDISABLE_SSH_KEY = {DISABLE_SSH_KEY}
     \r\tssh key location = {DEFAULT_SSHKEY}
     
     \rHadoop:
@@ -1162,12 +1173,13 @@ export PATH=$PATH:$SPARK_HOME/bin
     
     print("\n\n====== Install PySpark ======")
 
+    # Currently will install PySpark on all nodes
     try:
         PiGroup.run('python3 -c "import pyspark"')
     except:
         print('Installing.... This may take a while...')
         # If this goes too slow in China. Use "add-source" beforehand
-        PiGroup.run("pip3 --no-cache-dir install pyspark")
+        PiGroup.run("sudo pip3 --no-cache-dir install pyspark")
     finally:
         print('Already installed!')
 
@@ -1194,7 +1206,7 @@ export PATH=$PATH:$SPARK_HOME/bin
     #HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir /spark-event-log') # Start Hadoop first.
 
     # Spark default folder
-    HadoopGroup[0].run(f'mkdir -p /tmp/spark-events')
+    HadoopGroup.run(f'mkdir -p /tmp/spark-events')
 
     print('\nSpark installed successfully!!')
 
@@ -1205,6 +1217,10 @@ def start_spark(ctx):
     """
     Start Spark
     """
+    # Don't know why /tmp/spark-events will disappear...
+    # Spark default folder
+    HadoopGroup.run(f'mkdir -p /tmp/spark-events')
+
     # Just run on master node
     print("Starting spark...")
     HadoopGroup[0].run(f'{SPARK_INSTALL}/sbin/start-all.sh')
@@ -1283,3 +1299,64 @@ def example_spark(ctx):
         questionAsk({'Spark license': spark_license, 'Spark license (use HDFS)': spark_license_hdfs, 'Local file': local_file}, question='\nUse default Spark license or Local file?')
 
     questionAsk({'PI': PI_example, 'Wordcount': Wordcount_example}, question="Select an Spark example")
+
+@task
+def install_jupyter(ctx):
+    """
+    Install Jupyter Notebook with PySpark support
+    """
+    connection = PiGroup[0] # Master
+    # If don't use sudo it will be install in ~/.local/bin/jupyter-notebook
+    connection.sudo('sudo pip3 install jupyter findspark')
+
+    bashrc_location = '/etc/bash.bashrc'
+    # use '# PySpark with Jupyter Notebook' as flag
+    masterHost = getHosts(onlyAddress=True)[0]
+    bashrc_setting = f'''
+# PySpark with Jupyter Notebook
+export PYSPARK_DRIVER_PYTHON=jupyter
+export PYSPARK_DRIVER_PYTHON_OPTS="notebook --ip {masterHost} --port 8889 --no-browser"
+''' #export PATH=$PATH:/home/{USER}/.local/bin
+
+    if connection.run("grep -Fxq '%s' %s" % ("# PySpark with Jupyter Notebook", bashrc_location), warn=True).failed:
+        print('No previous settings, append settings...')
+        connection.run("echo '%s' | sudo tee -a %s" % (bashrc_setting, bashrc_location)) # Append line in master
+        connection.run("tail -n 4 %s" % bashrc_location) # check the settings
+        print('Applying changes...')
+        connection.run('source %s' % bashrc_location) # apply changes
+    else:
+        print('Setting already exist')
+
+    # Jupyter configure
+    print('\nConfiguring Jupyter Server')
+    print('This will ask you to input password (you can change it later in ~/.jupyter/jupyter_notebook_config.json)')
+    HadoopGroup[0].run('jupyter notebook --generate-config')
+    HadoopGroup[0].run('jupyter notebook password')
+
+@task
+def start_jupyter(ctx, spark=False):
+    connection = HadoopGroup[0] # Master
+    masterHost = getHosts(onlyAddress=True)[0]
+    if spark:
+        print("Make sure you have started Spark")
+        #start_spark(ctx)
+
+        # Port is hard-coded in install-jupyter
+        print(f"PySpark Jupyter Notebook is going to run on http://{masterHost}:8889")
+
+        # Run in local version (not using cluster)
+        # connection.run(f'PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS="notebook --ip {masterHost} --port 8889 --no-browser" {SPARK_INSTALL}/bin/pyspark', pty=True)
+
+        connection.run(f'PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS="notebook --ip {masterHost} --port 8889 --no-browser"\
+         {SPARK_INSTALL}/bin/pyspark --master spark://{masterHost}:7077 --driver-memory 512M', pty=True)
+
+        # Error: pyspark does not support any application options.
+        #connection.run(f'PYSPARK_DRIVER_PYTHON=jupyter PYSPARK_DRIVER_PYTHON_OPTS="notebook --ip {masterHost} --port 8889 --no-browser"\
+        # {SPARK_INSTALL}/bin/pyspark --master spark://{masterHost}:7077 --driver-memory 512M --num-executers {NUM_NODES} --total-executer-cores 3 --executer-memory 512M', pty=True)
+    else:
+        print(f"Jupyter Notebook is going to run on http://{masterHost}:8888")
+        connection.run(f'jupyter notebook --ip {masterHost} --port 8888 --no-browser', pty=True)
+        
+        # Don't know why it can't start in background...
+        #connection.run(f'jupyter notebook --ip {masterHost} --port 8888 --no-browser &', hide=True)
+        

@@ -104,8 +104,9 @@ A step by step record of how I build this system.
     * when any general purpose manipulation needed I'll add it.
 4. [Setup Hadoop](Tutorial/SetupHadoop.md)
 5. [Setup Spark](Tutorial/SetupSpark.md)
-6. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
-7. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
+6. [Setup Jupyter with PySpark and Parallel IPython](Tutorial/SetupJupyter.md)
+7. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
+8. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
     * on Hadoop
     * on Kubernetes
 
@@ -141,6 +142,7 @@ Distributed Tensorflow
 * [X] Expand to support any other Debian/Unix system
 * [X] Better switch between multiple configuration files for multi-server
     * Use *.yaml
+* Deal with PySpark and Jupyter Notebook problem
 * More friendly Document
 * Hadoop utility function introduction
 * Dynamic Configure based on different hardware and maybe GUI and save multiple settings

@@ -6,17 +6,21 @@ Path:
     SSH_KEY_PATH: ./connection # generated ssh key
 Connection:
     HOST_IP:
-        - '192.168.1.105' # Master
-        - '192.168.1.103' # Slave1
-        - '192.168.1.110' # Slave2
-        - '192.168.1.102' # Slave3
+        - '192.168.1.101' # Master
+        - '192.168.1.105' # Slave1
+        - '192.168.1.104' # Slave2
+        - '192.168.1.110' # Slave3
     Login:
         USER: pi
         PASSWORD: raspberry
-    CONN_MODE: HOSTNAME # Enter either 'IP' or 'HOSTNAME'
+    CONN_MODE: IP # Enter either 'IP' or 'HOSTNAME'
     # USE IP MODE BEFORE YOU SETUP HOSTNAME FOR EACH NODE (you can use my "set-hostname" function)
     # OR MODIFY hard-coded 'master' to 'raspberrypi' in fabfile.py (WHICH IS DEFAULT HOSTNAME FOR RASPBERRY PI)
     # IF YOU ONLY RUN ON SINGLE NODE
+    DISABLE_SSH_KEY: FALSE
+    # If you didn't bind ssh-key for your server (e.g. Aliyun). Use FALSE.
+    # If your server need ssh-key beforhand (e.g. GCP, AWS). Use TRUE.
+    # And make sure you've put the key under the SSH_KEY_PATH or you can modify DEFAULT_SSHKEY in fabfile.py directly.
 Hadoop:
     Connection:
         Login:

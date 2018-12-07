@@ -55,6 +55,16 @@ like Hadoop workers
 
 [Spark - Submitting Applications](https://spark.apache.org/docs/latest/submitting-applications.html)
 
+## PySpark with Jupyter Notebook
+
+[Get Started with PySpark and Jupyter Notebook in 3 Minutes](https://blog.sicara.com/get-started-pyspark-jupyter-guide-tutorial-ae2fe84f594f)
+
+```sh
+fab install-jupyter
+```
+
+More detail see [SetupJupyter.md](SetupJupyter.md)
+
 ## Job History
 
 * [Spark - Monitoring and Instrumentation](https://spark.apache.org/docs/latest/monitoring.html)
