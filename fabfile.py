@@ -431,10 +431,11 @@ def update_and_upgrade(ctx, uncommit=False):
         comment_line(ctx, UNCOMMENT_URL, sources_list, uncomment=True, verbose=True)
     CMD_parallel(ctx, 'sudo apt-get update -y && sudo apt-get upgrade -y')
 
-@task(help={'install-package': "Packages you want to install, seperate by ',' in a string"})
-def env_setup(ctx, install_package=""):
+@task(help={'install-package': "Packages you want to install, seperate by ',' in a string", "ubuntu": "If it's Ubuntu, install OpenJDK 8 instead."})
+def env_setup(ctx, install_package="", ubuntu=False):
     """
-    Environment setup
+    Environment setup with git, vim, tmux, zsh and Java.
+    (If specify install-package, then it will only install that package.)
     """
     if not install_package: # default install
         to_install = ['git', 'vim', 'tmux', 'zsh']
@@ -442,8 +443,12 @@ def env_setup(ctx, install_package=""):
         to_install = [x.strip() for x in install_package.split(',')]
 
     for connection in PiGroup:
+        # java -version
         if not install_package and connection.run('which java', warn=True).failed: # Java
-            to_install.append('oracle-java8-jdk')
+            if ubuntu:
+                to_install.append('openjdk-8-jdk')
+            else:
+                to_install.append('oracle-java8-jdk')
 
         print("Install %s" % (' '.join(to_install)))
         connection.sudo('sudo apt-get -y install %s' % (' '.join(to_install)))
@@ -801,15 +806,16 @@ export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
     masterFile = f'{HADOOP_INSTALL}/etc/hadoop/master'
     slavesFile = f'{HADOOP_INSTALL}/etc/hadoop/workers' # Hadoop 3.X
     #slavesFile = f'{HADOOP_INSTALL}/etc/hadoop/slaves' # Hadoop 2.X
-    HadoopGroup.run('echo '' | tee %s %s' % (masterFile, slavesFile))
+    PiGroup.run('echo '' | sudo tee %s %s' % (masterFile, slavesFile))
+    PiGroup.run(f'sudo chown {HADOOP_USER}:{HADOOP_GROUP} {masterFile} {slavesFile}')
     for num_node, host in enumerate(HOSTNAMES):
         host += '.local'
         if num_node == 0:
             # master
-            HadoopGroup.run('echo "%s" | tee -a %s' % (host, masterFile))
+            PiGroup.run('echo "%s" | sudo tee -a %s' % (host, masterFile))
         else:
             # slaves
-            HadoopGroup.run('echo "%s" | tee -a %s' % (host, slavesFile))
+            PiGroup.run('echo "%s" | sudo tee -a %s' % (host, slavesFile))
 
     print("\n\n====== Copy configure files ======")
     update_hadoop_conf(ctx)
