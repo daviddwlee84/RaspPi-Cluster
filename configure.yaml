@@ -24,7 +24,8 @@ Connection:
 Hadoop:
     Connection:
         Login:
+            # By previous tests. If you're using cloud server, and the server need to use your account to login.
+            # It's better to use regular user as hadoop user to eliminate the problems.
             HADOOP_GROUP: hadoop
             HADOOP_USER: hduser
             HADOOP_PASSWORD: hadoop
-    

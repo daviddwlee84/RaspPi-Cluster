@@ -45,6 +45,8 @@ fab uploadfile file_or_dir -s -p # Upload file or folder to remote (specific nod
 If you changed default hostname in `fabfile.py` or `configure.yaml`.
 Make sure you also changed the Hadoop configuraiton file in ./Files.
 
+(if you're using cloud server, make sure you've opened the ports that Hadoop need.)
+
 ```sh
 fab install-hadoop # An one button setup for hadoop environment on all nodes!!!
 
