@@ -569,26 +569,56 @@ def ssh_config(ctx):
             else:
                 print('Already set')
 
-@task(help={'clean': 'Clean up previous settings'})
-def add_source(ctx, cleanup=False):
+@task(help={'clean': 'Clean up previous settings', 'pip': 'Setup pip', 'apt-get': 'Setup apt-get', 'oh-my-tuna': 'Use oh-my-tuna script'})
+def add_source(ctx, cleanup=False, pip=False, apt_get=False, oh_my_tuna=False):
     """
     Add sources to solve slow download problem because of the fucking GFW
+
+    oh-my-tuna: https://tuna.moe/oh-my-tuna/
     """
     pipconf = '/etc/pip.conf'
+    aptgetconf = '/etc/apt/sources.list'
     if cleanup:
-        # pip
-        # comment_line(ctx, r'extra-index-url=', pipconf, uncomment=True)
-        # Not sure why this will delete all the content
-        # PiGroup.run("sudo sed -i '/%s/d' %s" % (r'index-url=http:\/\/mirrors.aliyun.com\/pypi\/simple\/', pipconf), hide=True)
-        # PiGroup.run("sudo sed -i '/%s/d' %s" % (r'[install]', pipconf), hide=True)
-        # PiGroup.run("sudo sed -i '/%s/d' %s" % (r'trusted-host=mirrors.aliyun.com', pipconf), hide=True)
-        append_line(ctx, '[global]\nextra-index-url=https://www.piwheels.org/simple', pipconf, override=True) # recover to original status
+        if pip:
+            # pip (Override to the original setting)
+            append_line(ctx, '[global]\nextra-index-url=https://www.piwheels.org/simple', pipconf, override=True) # recover to original status
+
+        if apt_get:
+            # apt-get (Override to the original setting of Raspbian Stretch)
+            setting = """deb http://raspbian.raspberrypi.org/raspbian/ stretch main contrib non-free rpi
+# Uncomment line below then 'apt-get update' to enable 'apt-get source'
+#deb-src http://raspbian.raspberrypi.org/raspbian/ stretch main contrib non-free rpi"""
+            append_line(ctx, setting, aptgetconf, override=True)
+            print("Updating apt-get")
+            CMD_parallel(ctx, 'sudo apt-get update')
     else:
+        if pip:
+            # pip
+            comment_line(ctx, r'extra-index-url=https:\/\/www.piwheels.org\/simple', pipconf)
+            append_line(ctx, 'index-url=http://mirrors.aliyun.com/pypi/simple/\n[install]\ntrusted-host=mirrors.aliyun.com', pipconf)
+        if apt_get:
+            # apt-get (This is for Debian 9 (stretch))
+            comment_line(ctx, r'deb http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi', aptgetconf)
+            append_line(ctx, 'deb http://mirrors.tuna.tsinghua.edu.cn/raspbian/raspbian/ stretch main non-free contrib', aptgetconf)
+            append_line(ctx, 'deb-src http://mirrors.tuna.tsinghua.edu.cn/raspbian/raspbian/ stretch main non-free contrib', aptgetconf)
+            print("Updating apt-get")
+            CMD_parallel(ctx, 'sudo apt-get update')
+
+    if oh_my_tuna:
+        print("Downloading oh-my-tuna.py script...")
+        CMD_parallel(ctx, 'wget https://tuna.moe/oh-my-tuna/oh-my-tuna.py')
+        print("Executing oh-my-tuna.py...")
+        CMD_parallel(ctx, 'sudo python oh-my-tuna.py --global')
+        print("Removing...")
+        CMD_parallel(ctx, 'rm oh-my-tuna.py')
+
+    # Check Result
+    if pip:
         # pip
-        comment_line(ctx, r'extra-index-url=https:\/\/www.piwheels.org\/simple', pipconf)
-        append_line(ctx, 'index-url=http://mirrors.aliyun.com/pypi/simple/\n[install]\ntrusted-host=mirrors.aliyun.com', pipconf)
-    # pip
-    CMD(ctx, 'cat %s' % pipconf, verbose=True) # Check result
+        CMD(ctx, 'cat %s' % pipconf, verbose=True)
+    if apt_get:
+        # apt-get
+        CMD(ctx, 'cat %s' % aptgetconf, verbose=True)
 
 @task(help={'user': 'The user you want to change password for', 'old': 'If enable this flag, it will use your user to login (i.e. ask your current password)'})
 def change_passwd(ctx, user, old=False):
