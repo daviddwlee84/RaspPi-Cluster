@@ -62,6 +62,53 @@ Default setting
 
 e.g. `ssh pi@192.168.x.x`
 
+## Format and copy image from another SD card
+
+```txt
+# Find the SD card device name (assume it's disk2)
+$ diskutil list
+/dev/disk0 (internal, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *251.0 GB   disk0
+   1:                        EFI EFI                     209.7 MB   disk0s1
+   2:                 Apple_APFS Container disk1         250.8 GB   disk0s2
+
+/dev/disk1 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +250.8 GB   disk1
+                                 Physical Store disk0s2
+   1:                APFS Volume Macintosh HD            234.4 GB   disk1s1
+   2:                APFS Volume Preboot                 45.1 MB    disk1s2
+   3:                APFS Volume Recovery                517.1 MB   disk1s3
+   4:                APFS Volume VM                      11.7 GB    disk1s4
+
+/dev/disk2 (internal, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     FDisk_partition_scheme                        *15.7 GB    disk2
+   1:             Windows_FAT_32 boot                    45.9 MB    disk2s1
+   2:                      Linux                         15.6 GB    disk2s2
+
+/dev/disk3 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:     FDisk_partition_scheme                        *15.7 GB    disk3
+   1:             Windows_FAT_32 boot                    45.9 MB    disk3s1
+   2:                      Linux                         15.6 GB    disk3s2
+
+# Unmount SD card
+$ diskutil unmountDisk /dev/disk2
+Unmount of all volumes on disk2 was successful
+
+# Format SD card (FAT32)
+$ sudo newfs_msdos -F 32 /dev/disk2
+newfs_msdos: warning: /dev/disk2 is not a character device
+512 bytes per physical sector
+/dev/disk2: 30567232 sectors in 1910452 FAT32 clusters (8192 bytes/cluster)
+bps=512 spc=16 res=32 nft=2 mid=0xf0 spt=32 hds=255 hid=0 drv=0x00 bsec=30597120 bspf=14926 rdcl=2 infs=1 bkbs=6
+
+# Copy from another SD card
+$ sudo dd if=/dev/disk3 of=/dev/disk2
+```
+
 ## Links
 
 * [Official Website](https://www.raspberrypi.org/)
