@@ -1374,8 +1374,11 @@ export PYSPARK_DRIVER_PYTHON_OPTS="notebook --ip {masterHost} --port 8889 --no-b
     HadoopGroup[0].run('jupyter notebook --generate-config')
     HadoopGroup[0].run('jupyter notebook password')
 
-@task
+@task(help={'spark': 'Start jupyter notebook with PySpark support'})
 def start_jupyter(ctx, spark=False):
+    """
+    Start jupyter notebook
+    """
     connection = HadoopGroup[0] # Master
     masterHost = getHosts(onlyAddress=True)[0]
     if spark:
