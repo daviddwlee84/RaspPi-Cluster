@@ -47,3 +47,24 @@ Either use password or token or ... to login
 
 * [ipyparallel Github](https://github.com/ipython/ipyparallel)
 * [ipyparallel documents](https://ipyparallel.readthedocs.io/en/latest/)
+
+## Online Jupyter Notebook Server
+
+### Google Colaboratory
+
+```jupyter
+# Put at the start of the notebook
+!apt-get -y install openjdk-8-jre-headless
+!pip install pyspark
+from pyspark.sql import SparkSession
+from pyspark import SparkContext
+spark = SparkSession.builder.master("local").getOrCreate()
+sc = SparkContext.getOrCreate()
+```
+
+* [使用 Google Colaboratory 跑 PySpark](https://medium.com/@chiayinchen/%E4%BD%BF%E7%94%A8-google-colaboratory-%E8%B7%91-pyspark-625a07c75000)
+* [Apache Spark on Google Colaboratory](https://mikestaszel.com/2018/03/07/apache-spark-on-google-colaboratory/)
+
+### AWS SageMaker
+
+* [Build Amazon SageMaker notebooks backed by Spark in Amazon EMR](https://aws.amazon.com/blogs/machine-learning/build-amazon-sagemaker-notebooks-backed-by-spark-in-amazon-emr/)
