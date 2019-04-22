@@ -1412,6 +1412,28 @@ def start_jupyter(ctx, spark=False):
         # Don't know why it can't start in background...
         #connection.run(f'jupyter notebook --ip {masterHost} --port 8888 --no-browser &', hide=True)
 
+
+# Docker Swarm (TODO: test on cluster and also the configuration of docker swarm)
+
+@task(help={'test': 'Test docker with hello-world'})
+def install_docker(ctx, test=False):
+    """
+    Install docker (now test on master only)
+    """
+    for connection in PiGroup:
+        print("Connect to", connection)
+        if connection.run('which docker', warn=True).failed:
+            print("Did not find docker, installing...")
+            # connection.run('sudo apt-get install -y dialog apt-utils')
+            connection.run('DEBIAN_FRONTEND=noninteractive curl -sSL https://get.docker.com | sudo sh')
+            connection.sudo(f'usermod -aG docker {USER}')
+        
+        if test:
+            connection.run('docker run hello-world')
+    
+    print("Dockers are all ready!")
+
+
 # VSCode code-server (TODO: Need to wait ARM executable release)
 
 @task

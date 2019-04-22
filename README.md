@@ -86,6 +86,18 @@ This will be installed with Hadoop user
 fab install-jupyter
 ```
 
+#### Docker Swarm
+
+```sh
+fab install-docker
+```
+
+#### VSCode code-server
+
+```sh
+fab install-codeserver
+```
+
 ## Example
 
 Subject|Ecosystem|Purpose
@@ -115,10 +127,15 @@ A step by step record of how I build this system.
 4. [Setup Hadoop](Tutorial/SetupHadoop.md)
 5. [Setup Spark](Tutorial/SetupSpark.md)
 6. [Setup Jupyter with PySpark and Parallel IPython](Tutorial/SetupJupyter.md)
-7. [Setup Kubernetes](Tutorial/SetupKubernetes.md)
-8. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md)
+7. [Setup Docker Swarm](Tutorial/SetupDockerSwarm.md) - TODO
+8. [Setup Kubernetes](Tutorial/SetupKubernetes.md) - TODO
+9. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md) - TODO
     * on Hadoop
     * on Kubernetes
+
+### Not Big Data / Cluster Related
+
+1. [Setup VSCode code-server](Tutorial/SetupVSCodeServer.md) - TODO
 
 ## Notes about distributed computing
 
@@ -149,17 +166,26 @@ Distributed Tensorflow
 
 [RediSearch](Notes/RediSearch/RediSearch.md)
 
+### [Parallel Computing](Notes/ParallelComputing/ParallelComputing.md)
+
+#### Resource Allocation System (RAS)
+
+[Sun Grid Engine (SGE)](Notes/ParallelComputing/SGE.md)
+
+[Torque/PBS](Notes/ParallelComputing/Torque_PBS.md)
+
 ## TODO
 
-* [X] Expand to support any other Debian/Unix system
-* [X] Better switch between multiple configuration files for multi-server
-    * Use *.yaml
 * Deal with PySpark and Jupyter Notebook problem
 * More friendly Document
 * Hadoop utility function introduction
 * Dynamic Configure based on different hardware and maybe GUI and save multiple settings
-    * Set up hardware detail e.g. RAM size
-    * Read and write *.xml
+  * Set up hardware detail e.g. RAM size
+  * Read and write *.xml
 * list some alterative note
-    * pdsh == fab CMD
-    * ssh-copy-id == ssh-config
+  * pdsh == fab CMD
+  * ssh-copy-id == ssh-config
+* Hive, HBase, Pig, ...
+* Git server maybe
+  * [Setting up Your Raspberry Pi as a Git Server](https://www.sitepoint.com/setting-up-your-raspberry-pi-as-a-git-server/)
+* [14+ Raspberry Pi Server Projects](https://pimylifeup.com/category/projects/server/)
