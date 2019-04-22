@@ -99,6 +99,10 @@ SPARK_MIRROR = 'http://ftp.mirror.tw/pub/apache/spark' # Taiwan mirror
 # Location for hadoop SSH key
 HADOOP_SSH_KEY_PATH = f'{SSH_KEY_PATH}/hadoopSSH'
 
+# === VSCode code-server === #
+CODE_SERVER_VERSION = '1.903-vsc1.33.1'
+CODE_SERVER_RELEASE = f'https://github.com/codercom/code-server/releases/download/{CODE_SERVER_VERSION}/code-server{CODE_SERVER_VERSION}-linux-x64.tar.gz'
+
 ######### Some process #######
 # Generally you don't need to modify things here
 # unless you clearly understand the dependencies (e.g. hadoop config xml)
@@ -116,6 +120,10 @@ HDFS_DIR = '/hadoop' # namenode, datanodes and tmp
 SPARK_TARFILE = f'spark-{SPARK_VERSION}-bin-hadoop2.7.tgz'
 SPARK_REMOTE_TAR = f'{SPARK_MIRROR}/spark-{SPARK_VERSION}/spark-{SPARK_VERSION}-bin-hadoop2.7.tgz'
 SPARK_INSTALL = f'/opt/spark-{SPARK_VERSION}-bin-hadoop2.7'
+
+# VSCode code-server
+CODE_SERVER_TARFILE = f'code-server{CODE_SERVER_VERSION}-linux-x64.tar.gz'
+CODE_SERVER_INSTALL = f'/opt/code-server{CODE_SERVER_VERSION}-linux-x64'
 
 #############################
 #   Global Fabric Object    #
@@ -184,13 +192,13 @@ def questionAsk(questionDict, question=None):
         questions += str(optionsNum) + '. ' + question + '\n'
         selections[optionsNum] = function
         optionsNum += 1
-    
+
     def default():
         print('No this option.')
 
     def select(numSelect):
         return selections.get(numSelect, default)
-    
+
     selection = int(input(questions + '\nSelection: '))
     select(selection)()
 
@@ -230,7 +238,7 @@ def show_config(ctx):
     \r\tFILE_PATH = {FILE_PATH}
     \r\tTEMP_FILES = {TEMP_FILES}
     \r\tSSH_KEY_PATH = {SSH_KEY_PATH}
-    
+
     \rConnection:
     \r\tHOST_IP = {HOSTS_IP}
     \r\tHOSTNAMES = {HOSTNAMES}
@@ -238,7 +246,7 @@ def show_config(ctx):
     \r\tCONN_MODE = {CONN_MODE}
     \r\tDISABLE_SSH_KEY = {DISABLE_SSH_KEY}
     \r\tssh key location = {DEFAULT_SSHKEY}
-    
+
     \rHadoop:
     \r\tHADOOP_VERSION = {HADOOP_VERSION}
     \r\tHADOOP_USER = {HADOOP_USER}, HADOOP_PASSWORD = {HADOOP_PASSWORD}, HADOOP_GROUP = {HADOOP_GROUP}
@@ -268,7 +276,7 @@ def CMD(ctx, command, verbose=False, node_num=-1):
             print("Executing command on", connection)
         connection.run(command, pty=verbose)
     else:
-        print('No such node.')    
+        print('No such node.')
         node_ls(ctx)
 
 @task(help={'command': "Command you want to sent to host in parallel", 'hadoop': "Use hadoop user to login or default use pi.", 'verbose': "Verbose output"})
@@ -280,7 +288,7 @@ def CMD_parallel(ctx, command, hadoop=False, verbose=False):
         results = HadoopGroup.run(command, hide=True)
     else:
         results = PiGroup.run(command, hide=True)
-    
+
     if verbose:
         for connection, result in results.items():
             print("{0.host}:\n{1.stdout}\n".format(connection, result))
@@ -300,9 +308,9 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
         elif NUM_NODES > int(node_num) >= 0:
             os.system('scp -r -i %s %s %s:%s' % (DEFAULT_SSHKEY, filepath, getHosts(user=USER)[int(node_num)], dest))
         else:
-            print('No such node.')    
+            print('No such node.')
             node_ls(ctx)
-    
+
     # Use fabric connection.put
     def simple_upload(dest):
         if int(node_num) == -1:
@@ -328,7 +336,7 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
                 if verbose:
                     print("File already exist")
         else:
-            print('No such node.')    
+            print('No such node.')
             node_ls(ctx)
 
     # Make sure default upload folder exist
@@ -352,7 +360,7 @@ def uploadfile(ctx, filepath, destination=REMOTE_UPLOAD, permission=False, verbo
             scp_upload(destination)
         else:
             try:
-                simple_upload(destination)        
+                simple_upload(destination)
             except PermissionError:
                 print("Your destination need superuser privilege, try using -p flag!")
 
@@ -370,7 +378,7 @@ def ssh_connect(ctx, node_num, hadoop=False, private_key=DEFAULT_SSHKEY):
         user = USER
         if private_key != DEFAULT_SSHKEY:
             private_key = expanduser(private_key) # expand ~ to actual route
-        
+
     if not os.path.isfile(private_key):
         print("Can't find private key at", private_key)
     else:
@@ -471,7 +479,7 @@ def favorite_devenv(ctx, masterOnly=False):
     connection.run('sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"',
                     pty=True, watchers=[zshInstallPassword])
     #TODO
-    
+
 
 ### Quick Setup
 
@@ -551,13 +559,13 @@ def ssh_config(ctx):
         newkeygen = True
     else:
         newkeygen = False
-    
+
     # Upload ssh key
     CMD_parallel(ctx, 'mkdir -p -m 0700 .ssh')
     uploadfile(ctx, f'{SSH_KEY_PATH}/id_rsa', '.ssh', verbose=True)
     uploadfile(ctx, f'{SSH_KEY_PATH}/id_rsa.pub', '.ssh', verbose=True)
 
-    # Append 
+    # Append
     with open(f'{SSH_KEY_PATH}/id_rsa.pub', 'r') as pubkeyfile:
         pubkey = pubkeyfile.read()
         for connection in PiGroup:
@@ -627,7 +635,7 @@ def change_passwd(ctx, user, old=False):
     """
     if old:
         # Method 1. Login with that user and then change the password
-        old_password = getpass.getpass("What's your current password?") 
+        old_password = getpass.getpass("What's your current password?")
         new_password = getpass.getpass("What password do you want to set?") # If new password is too simple here, it will be reject...
         currResponder = Responder(
             pattern=r'current', # (current) UNIX password:
@@ -817,7 +825,7 @@ export PATH=$PATH:$HADOOP_HOME/bin:$HADOOP_HOME/sbin
             connection.run('source %s' % bashrc_location) # apply changes
         else:
             print('Setting already exist')
-        
+
         if verbose:
             print("Hadoop version:")
             connection.run('hadoop version')
@@ -1184,7 +1192,7 @@ def install_spark(ctx, verbose=False):
             connection.sudo(f'sudo chown -R {HADOOP_USER}:{HADOOP_GROUP} {SPARK_INSTALL}')
         else:
             print('Found %s, skip to next node' % SPARK_INSTALL)
-    
+
     print("\n\n====== Setup environment variable ======")
     bashrc_location = '/etc/bash.bashrc'
     # use '# Hadoop Settings' as flag
@@ -1206,10 +1214,10 @@ export PATH=$PATH:$SPARK_HOME/bin
         else:
             print('Setting already exist')
 
-        if verbose:    
+        if verbose:
             print(" version:")
             connection.run('spark-shell version')
-    
+
     print("\n\n====== Install PySpark ======")
 
     # Currently will install PySpark on all nodes
@@ -1239,7 +1247,7 @@ export PATH=$PATH:$SPARK_HOME/bin
             host += '.local'
             # slaves
             HadoopGroup[0].run('echo "%s" | tee -a %s' % (host, slavesFile))
-    
+
     print("\n\n====== Make dir for Spark Job History logs =======")
     # Setting set in spark-defaults.conf and spark-env.sh
     #HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir /spark-event-log') # Start Hadoop first.
@@ -1310,7 +1318,7 @@ def example_spark(ctx):
         def spark_license():
             print(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
             HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 {sparkExampleDir}/wordcount.py {SPARK_INSTALL}/LICENSE')
-        
+
         def spark_license_hdfs():
             hdfsDir = '/sparkExample/wordCount'
             try:
@@ -1320,7 +1328,7 @@ def example_spark(ctx):
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -mkdir -p {hdfsDir}')
             HadoopGroup[0].run(f'{HADOOP_INSTALL}/bin/hdfs dfs -copyFromLocal {SPARK_INSTALL}/LICENSE {hdfsDir}/sparkLicense')
             HadoopGroup[0].run(f'{SPARK_INSTALL}/bin/spark-submit --master spark://{getHosts(onlyAddress=True)[0]}:7077 {sparkExampleDir}/wordcount.py hdfs://{getHosts(onlyAddress=True)[0]}:9000/{hdfsDir}/sparkLicense')
-            
+
         def local_file(useHDFS=False):
             print('To be done.')
             pass
@@ -1351,7 +1359,7 @@ def install_jupyter(ctx):
     bashrc_location = '/etc/bash.bashrc'
     #masterHost = getHosts(onlyAddress=True)[0]
     masterHost = getHosts(mode=connection_mode.HOSTNAME, onlyAddress=True)[0] # Force to use hostname
-    
+
     # use '# PySpark with Jupyter Notebook' as flag
     bashrc_setting = f'''
 # PySpark with Jupyter Notebook
@@ -1400,7 +1408,43 @@ def start_jupyter(ctx, spark=False):
     else:
         print(f"Jupyter Notebook is going to run on http://{masterHost}:8888")
         connection.run(f'jupyter notebook --ip {masterHost} --port 8888 --no-browser', pty=True)
-        
+
         # Don't know why it can't start in background...
         #connection.run(f'jupyter notebook --ip {masterHost} --port 8888 --no-browser &', hide=True)
-        
+
+# VSCode code-server (TODO: Need to wait ARM executable release)
+
+@task
+def install_codeserver(ctx):
+    """
+    Install VSCode code-server (release version)
+    """
+    connection = PiGroup[0] # Master
+
+    if connection.run('test -d %s' % CODE_SERVER_INSTALL, warn=True).failed:
+        print("Did not find %s, downloading %s..." % (CODE_SERVER_INSTALL, CODE_SERVER_TARFILE))
+        connection.run(f'wget {CODE_SERVER_RELEASE}')
+        print("Extracting tar file...")
+        connection.sudo('tar zxf %s -C %s' % (CODE_SERVER_TARFILE, '/opt'))
+        print("Clean up tar file...")
+        connection.run('rm %s' % CODE_SERVER_TARFILE)
+
+    print('VSCode code-server has installed! (use start-codeserver to start!)')
+
+@task(help={'docker': 'Start VSCode code-server with docker'})
+def start_codeserver(ctx, remote_dir="${PWD}", docker=False):
+    """
+    Start VSCode code-server
+    """
+    connection = PiGroup[0] # Master
+    port = 8443
+    masterHost = getHosts(onlyAddress=True)[0]
+
+    if docker:
+        print('Using docker to start the code-server')
+        connection.run(f'docker run -it -p 0.0.0.0:{port}:{port} -v "{remote_dir}:/home/coder/project" codercom/code-server --allow-http --no-auth')
+        print(f"VSCode code-server is going to run on https://{masterHost}:{port}")
+    else:
+        print('Using release executable to start the code-server')
+        connection.run(f'{CODE_SERVER_INSTALL}/code-server -p {port} --no-auth --allow-http')
+        print(f"VSCode code-server is going to run on https://{masterHost}:{port}")
