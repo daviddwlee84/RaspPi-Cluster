@@ -7,12 +7,14 @@
 * Raspberry Pi 3 Model B+ × 4
 * MicroSD card × 4
 
+> * Raspberry Pi 4 Model B × 4 with Heatsinks
+
 ### Internet
 
 * 5-port Ethernet Switch × 1
 * Ethernet cable
-    * short × 4
-    * long  × 1
+  * short × 4
+  * long  × 1
 
 ### Power
 
@@ -29,11 +31,13 @@
 ### Operating System
 
 * macOS
+  * if later than Catalina, might face 32-bit `nmap` problem
 * Raspbian
+  * currently Buster, if it changed, it might need to change some code in `fabfile.py`
 
 ### Python Packages
 
 * Python 3.6
-    * f-string support
+  * f-string support
 * [Fabric 2](https://www.fabfile.org/)
 * [PyYAML](https://pyyaml.org/)

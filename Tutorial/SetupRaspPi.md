@@ -4,7 +4,9 @@
 
 ### Download Images
 
-* [Raspbian](https://www.raspberrypi.org/downloads/raspbian/)
+* [Raspbian](https://www.raspberrypi.org/downloads/raspbian/) (currently `buster`)
+
+> If using new version Raspbian, make sure all the version related name in `fabfile.py` is matched
 
 ### Write Image into SD Card
 
@@ -26,32 +28,36 @@ In order to connect to Raspberry Pi without a monitor at first. We need to enabl
     * Check the device name of the SD Card `diskutil list`
     * Unmount disk `diskutil unmountDisk /dev/diskNum`
 
-### raspi-config
-
-1. Expand file system
-
-TBD
-
 ## Connect to Pi
 
 ### Scan Pi's IP Address
 
-There are many approach
+There are many approaches
 
 #### nmap
 
+> Use `ifconfig` and see current PC WLAN address and replace `x` with related value
+
 * `nmap -sn 192.168.x.x/24`
 
-#### iOS
+> * [bad CPU type in executable: nmap (x86 -> x64) · Issue #1722 · nmap/nmap](https://github.com/nmap/nmap/issues/1722)
+> * [Release Nmap as a 64-bit build on macOS · Issue #1371 · nmap/nmap](https://github.com/nmap/nmap/issues/1371)
 
-* Fing - Network Scanner
+#### Fing
+
+* [Fing - IoT device intelligence for the connected world | Fing](https://www.fing.com/)
+
+#### Angry IP Scanner
+
+* [Angry IP Scanner - the original IP scanner for Windows, Mac and Linux](https://angryip.org/)
+* [angryip/ipscan: Angry IP Scanner - fast and friendly network scanner](https://github.com/angryip/ipscan)
 
 ### SSH Client
 
 * Windows
-    * putty
+  * putty
 * iOS, Android
-    * Terminus
+  * Terminus
 
 ### Connection
 
@@ -61,6 +67,16 @@ Default setting
 * password: raspberry
 
 e.g. `ssh pi@192.168.x.x`
+
+## Additional Settings
+
+### raspi-config
+
+> Login to each Raspparry Pi and type `sudo raspi-config` (only for Raspbian)
+
+1. Setup locale
+   * [How to configure locale settings of Raspbian Stretch with raspi-config - Techcoil Blog](https://www.techcoil.com/blog/how-to-configure-locale-settings-of-raspbian-stretch-with-raspi-config/)
+   * Or just `sudo locale-gen en_US.UTF-8` (recommend)
 
 ## Format and copy image from another SD card
 
@@ -109,18 +125,44 @@ bps=512 spc=16 res=32 nft=2 mid=0xf0 spt=32 hds=255 hid=0 drv=0x00 bsec=30597120
 $ sudo dd if=/dev/disk3 of=/dev/disk2
 ```
 
+## Raspberry Pi 4 Heat Testing
+
+* [How to find out Raspberry Pi GPU and ARM CPU temperature on Linux - nixCraft](https://www.cyberciti.biz/faq/linux-find-out-raspberry-pi-gpu-and-arm-cpu-temperature-command/)
+* [Raspberry Pi 4 Heat Testing - YouTube](https://www.youtube.com/watch?v=tWsM69_5g4E)
+
+```sh
+#!/bin/bash
+# Script: my-pi-temp.sh
+# Purpose: Display the ARM CPU and GPU  temperature of Raspberry Pi 2/3 
+# Author: Vivek Gite <www.cyberciti.biz> under GPL v2.x+
+# -------------------------------------------------------
+cpu=$(</sys/class/thermal/thermal_zone0/temp)
+echo "$(date) @ $(hostname)"
+echo "-------------------------------------------"
+echo "GPU => $(/opt/vc/bin/vcgencmd measure_temp)"
+echo "CPU => $((cpu/1000))'C"
+```
+
 ## Links
 
 * [Official Website](https://www.raspberrypi.org/)
 * [Installation Guide](https://www.raspberrypi.org/documentation/installation/installing-images/README.md)
 * Documentation
-    * Remote Access
-        * [SSH](https://www.raspberrypi.org/documentation/remote-access/ssh/README.md)
-            * 3 Enable SSH on a headless Raspberry Pi (add file to SD card on another machine)
-        * [VNC](https://www.raspberrypi.org/documentation/remote-access/vnc/README.md)
-        * [FTP](https://www.raspberrypi.org/documentation/remote-access/ftp.md)
-    * Configuration
-        * [raspi-config](https://www.raspberrypi.org/documentation/configuration/raspi-config.md)
-        * [config.txt](https://www.raspberrypi.org/documentation/configuration/config-txt/README.md) ([the boot folder](https://www.raspberrypi.org/documentation/configuration/boot_folder.md))
-            * [HDMI configuration](https://www.raspberrypi.org/documentation/configuration/hdmi-config.md)
-        * [Securing Your Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/security.md)
+  * Remote Access
+    * [SSH](https://www.raspberrypi.org/documentation/remote-access/ssh/README.md)
+      * 3 Enable SSH on a headless Raspberry Pi (add file to SD card on another machine)
+    * [VNC](https://www.raspberrypi.org/documentation/remote-access/vnc/README.md)
+    * [FTP](https://www.raspberrypi.org/documentation/remote-access/ftp.md)
+  * Configuration
+    * [raspi-config](https://www.raspberrypi.org/documentation/configuration/raspi-config.md)
+    * [config.txt](https://www.raspberrypi.org/documentation/configuration/config-txt/README.md) ([the boot folder](https://www.raspberrypi.org/documentation/configuration/boot_folder.md))
+      * [HDMI configuration](https://www.raspberrypi.org/documentation/configuration/hdmi-config.md)
+  * [Securing Your Raspberry Pi](https://www.raspberrypi.org/documentation/configuration/security.md)
+
+Trouble Shooting
+
+* [ubuntu - How do I resolve `The following packages have unmet dependencies` - Stack Overflow](https://stackoverflow.com/questions/26571326/how-do-i-resolve-the-following-packages-have-unmet-dependencies)
+  * `fab CMD-parallel 'sudo apt-get install -fy vlc-bin vlc-plugin-skins2'`
+* Perl locale problem
+  * [How to fix a locale setting warning from Perl? - Stack Overflow](https://stackoverflow.com/questions/2499794/how-to-fix-a-locale-setting-warning-from-perl)
+  * [Perl warning Setting locale failed in Debian - Thomas-Krenn-Wiki](https://www.thomas-krenn.com/en/wiki/Perl_warning_Setting_locale_failed_in_Debian)
