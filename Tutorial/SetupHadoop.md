@@ -1,16 +1,22 @@
 # Setup Hadoop
 
-* Version here: 3.1.1
+* Version here: 3.2.1 (~~3.1.1~~)
 
 ## Download Hadoop
 
 We first download Hadoop from official website to `temp_files/`
 
 * [Hadoop releases](https://hadoop.apache.org/releases.html#Download)
-* [Apache Hadoop 3.1.1 Mirror](https://www.apache.org/dyn/closer.cgi/hadoop/common/hadoop-3.1.1/hadoop-3.1.1.tar.gz)
 
 ```sh
 fab download-hadoop
+```
+
+> If `ERROR 404: Not Found` then go to mirror address and see what's the latest version
+
+```py
+HADOOP_MIRROR = 'http://ftp.mirror.tw/pub/apache/hadoop/common' # Taiwan mirror
+HADOOP_MIRROR = 'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common' # China Tsinghua mirror
 ```
 
 ### Configure

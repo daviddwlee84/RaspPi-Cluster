@@ -86,9 +86,9 @@ DEFAULT_SSHKEY = f'{SSH_KEY_PATH}/id_rsa'
 REMOTE_UPLOAD = f'/home/{USER}/Downloads'
 
 # === Hadoop === #
-HADOOP_VERSION = '3.1.1'
-#HADOOP_MIRROR = 'http://ftp.mirror.tw/pub/apache/hadoop/common' # Taiwan mirror
-HADOOP_MIRROR = 'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common' # China Tsinghua mirror
+HADOOP_VERSION = '3.2.1'
+HADOOP_MIRROR = 'http://ftp.mirror.tw/pub/apache/hadoop/common' # Taiwan mirror
+# HADOOP_MIRROR = 'http://mirrors.tuna.tsinghua.edu.cn/apache/hadoop/common' # China Tsinghua mirror
 
 # === Spark === #
 SPARK_VERSION = '2.4.0'
@@ -432,12 +432,14 @@ def update_and_upgrade(ctx, uncommit=False):
     """
     print("Updating... (this may take a while)")
     # Raspbian /etc/apt/sources.list
-    UNCOMMENT_URL = r"deb-src http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi"
+    # If using new version Raspbian, make sure the version name is matched i.e. buster
+    UNCOMMENT_URL = r"deb-src http:\/\/raspbian.raspberrypi.org\/raspbian\/ buster main contrib non-free rpi"
     if uncommit:
         sources_list = '/etc/apt/sources.list'
         print("Uncommit deb-src in", sources_list)
         comment_line(ctx, UNCOMMENT_URL, sources_list, uncomment=True, verbose=True)
     CMD_parallel(ctx, 'sudo apt-get update -y && sudo apt-get upgrade -y')
+    # If return with error, then check if there is any borken package need to be fixed (sudo apt-get install -f broken-package)
 
 @task(help={'install-package': "Packages you want to install, seperate by ',' in a string", "ubuntu": "If it's Ubuntu, install OpenJDK 8 instead."})
 def env_setup(ctx, install_package="", ubuntu=False):
@@ -592,10 +594,11 @@ def add_source(ctx, cleanup=False, pip=False, apt_get=False, oh_my_tuna=False):
             append_line(ctx, '[global]\nextra-index-url=https://www.piwheels.org/simple', pipconf, override=True) # recover to original status
 
         if apt_get:
-            # apt-get (Override to the original setting of Raspbian Stretch)
-            setting = """deb http://raspbian.raspberrypi.org/raspbian/ stretch main contrib non-free rpi
+            # If using new version Raspbian, make sure the version name is matched i.e. buster
+            # apt-get (Override to the original setting of Raspbian)
+            setting = """deb http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi
 # Uncomment line below then 'apt-get update' to enable 'apt-get source'
-#deb-src http://raspbian.raspberrypi.org/raspbian/ stretch main contrib non-free rpi"""
+#deb-src http://raspbian.raspberrypi.org/raspbian/ buster main contrib non-free rpi"""
             append_line(ctx, setting, aptgetconf, override=True)
             print("Updating apt-get")
             CMD_parallel(ctx, 'sudo apt-get update')
@@ -605,10 +608,11 @@ def add_source(ctx, cleanup=False, pip=False, apt_get=False, oh_my_tuna=False):
             comment_line(ctx, r'extra-index-url=https:\/\/www.piwheels.org\/simple', pipconf)
             append_line(ctx, 'index-url=http://mirrors.aliyun.com/pypi/simple/\n[install]\ntrusted-host=mirrors.aliyun.com', pipconf)
         if apt_get:
-            # apt-get (This is for Debian 9 (stretch))
-            comment_line(ctx, r'deb http:\/\/raspbian.raspberrypi.org\/raspbian\/ stretch main contrib non-free rpi', aptgetconf)
-            append_line(ctx, 'deb http://mirrors.tuna.tsinghua.edu.cn/raspbian/raspbian/ stretch main non-free contrib', aptgetconf)
-            append_line(ctx, 'deb-src http://mirrors.tuna.tsinghua.edu.cn/raspbian/raspbian/ stretch main non-free contrib', aptgetconf)
+            # apt-get
+            # If using new version Raspbian, make sure the version name is matched i.e. buster
+            comment_line(ctx, r'deb http:\/\/raspbian.raspberrypi.org\/raspbian\/ buster main contrib non-free rpi', aptgetconf)
+            append_line(ctx, 'deb http://mirrors.tuna.tsinghua.edu.cn/raspbian/raspbian/ buster main non-free contrib', aptgetconf)
+            append_line(ctx, 'deb-src http://mirrors.tuna.tsinghua.edu.cn/raspbian/raspbian/ buster main non-free contrib', aptgetconf)
             print("Updating apt-get")
             CMD_parallel(ctx, 'sudo apt-get update')
 
