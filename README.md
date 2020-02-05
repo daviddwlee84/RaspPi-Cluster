@@ -111,25 +111,26 @@ Subject|Ecosystem|Purpose
 A step by step record of how I build this system.
 
 * [Preparation](Tutorial/Preparation.md)
-    * Hardware purchase
-    * Software package and dependencies (PC/Laptop)
-        * Python > 3.6
-        * Fabric 2.X
+  * Hardware purchase
+  * Software package and dependencies (PC/Laptop)
+    * Python > 3.6
+    * Fabric 2.X
 
 1. [Setup Raspberry Pis](Tutorial/SetupRaspPi.md)
 2. Assemble hardwares
 
     ![rpi-cluster](Picture/FourNodesRaspberryPiCluster.jpeg)
 
-3. [Setup fabric (brief notes)](Tutorial/SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
+3. Follow steps in [Quick Setup](#quick-setup)
+4. [Setup fabric (brief notes)](Tutorial/SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
     * I've built some utility function first and then move on setup Hadoop
     * when any general purpose manipulation needed I'll add it.
-4. [Setup Hadoop](Tutorial/SetupHadoop.md)
-5. [Setup Spark](Tutorial/SetupSpark.md)
-6. [Setup Jupyter with PySpark and Parallel IPython](Tutorial/SetupJupyter.md)
-7. [Setup Docker Swarm](Tutorial/SetupDockerSwarm.md) - TODO
-8. [Setup Kubernetes](Tutorial/SetupKubernetes.md) - TODO
-9. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md) - TODO
+5. [Setup Hadoop](Tutorial/SetupHadoop.md)
+6. [Setup Spark](Tutorial/SetupSpark.md)
+7. [Setup Jupyter with PySpark and Parallel IPython](Tutorial/SetupJupyter.md)
+8. [Setup Docker Swarm](Tutorial/SetupDockerSwarm.md) - TODO
+9. [Setup Kubernetes](Tutorial/SetupKubernetes.md) - TODO
+10. [Setup Distributed Tensorflow](Tutorial/SetupDestributedTensorflow.md) - TODO
     * on Hadoop
     * on Kubernetes
 
@@ -168,6 +169,8 @@ Distributed Tensorflow
 
 ### [Parallel Computing](Notes/ParallelComputing/ParallelComputing.md)
 
+> [Intel AI DevCloud Case Study](Notes/ParallelComputing/IntelAIDevCloud.md)
+
 #### Resource Allocation System (RAS)
 
 [Sun Grid Engine (SGE)](Notes/ParallelComputing/SGE.md)
@@ -189,3 +192,4 @@ Distributed Tensorflow
 * Git server maybe
   * [Setting up Your Raspberry Pi as a Git Server](https://www.sitepoint.com/setting-up-your-raspberry-pi-as-a-git-server/)
 * [14+ Raspberry Pi Server Projects](https://pimylifeup.com/category/projects/server/)
+* Change `apt-get` to `apt`?!
