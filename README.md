@@ -25,9 +25,10 @@ python3 -m pip install -r requirements.txt
 #### Quick Setup
 
 ```sh
-fab update-and-upgrade # Make apt-get up to date
+fab update-and-upgrade # Make apt-get up to date (this can be done using the first login GUI of Raspbian Buster)
 fab env-setup # Quick install basic utility function
 fab set-hostname # Set hostname for each node (will need to reboot)
+fab hosts-config # Set each others' hostname-to-IP on each Raspberry Pi (or they can't find each other using hostname)
 fab ssh-config # Generate ssh-key and setup to all nodes
 fab change-passwd # Change password for more security (Remember also change in fabfile.py later if you have changed pi's passowrd)
 fab expand-swap # Expand swap (default 1024MB use --size=MEMSIZE to match your need) (System default is 100MB)
@@ -100,11 +101,11 @@ fab install-codeserver
 
 ## Example
 
-Subject|Ecosystem|Purpose
--------|---------|-------
-[MapReduce Practice](Example/MapReduce/)|Hadoop|MapReduce practice with Hadoop Streaming
-[Spark Practice](Example/SparkExample/)|Spark|
-[Inverted Index](Example/InvertedIndex/)||Focus on multiple inverted index strategy for search
+| Subject                                  | Ecosystem | Purpose                                              |
+| ---------------------------------------- | --------- | ---------------------------------------------------- |
+| [MapReduce Practice](Example/MapReduce/) | Hadoop    | MapReduce practice with Hadoop Streaming             |
+| [Spark Practice](Example/SparkExample/)  | Spark     |                                                      |
+| [Inverted Index](Example/InvertedIndex/) |           | Focus on multiple inverted index strategy for search |
 
 ## Steps
 
@@ -122,6 +123,15 @@ A step by step record of how I build this system.
     ![rpi-cluster](Picture/FourNodesRaspberryPiCluster.jpeg)
 
 3. Follow steps in [Quick Setup](#quick-setup)
+   * Make sure
+     1. (setup locale)
+     2. update and upgrade
+     3. setup environment
+        1. git
+        2. Java (JDK)
+     4. setup hostname (for each and between each others)
+     5. ssh keys
+     6. expand swap (if use Raspberry Pi 3 or small RAM Raspberry Pi 4)
 4. [Setup fabric (brief notes)](Tutorial/SetupFabric.md) - execute shell commands remotely over SSH to all hosts at once!
     * I've built some utility function first and then move on setup Hadoop
     * when any general purpose manipulation needed I'll add it.
@@ -169,7 +179,10 @@ Distributed Tensorflow
 
 ### [Parallel Computing](Notes/ParallelComputing/ParallelComputing.md)
 
-> [Intel AI DevCloud Case Study](Notes/ParallelComputing/IntelAIDevCloud.md)
+> Intel has updated their DevCloud system and currently called oneAPI
+>
+> * [Intel AI DevCloud oneAPI](Notes/ParallelComputing/NewIntelAIDevCloud.md)
+> ([Intel AI DevCloud (Old)](Notes/ParallelComputing/IntelAIDevCloud.md))
 
 #### Resource Allocation System (RAS)
 
@@ -193,3 +206,4 @@ Distributed Tensorflow
   * [Setting up Your Raspberry Pi as a Git Server](https://www.sitepoint.com/setting-up-your-raspberry-pi-as-a-git-server/)
 * [14+ Raspberry Pi Server Projects](https://pimylifeup.com/category/projects/server/)
 * Change `apt-get` to `apt`?!
+  * [Difference Between apt and apt-get Explained - It's FOSS](https://itsfoss.com/apt-vs-apt-get-difference/)
