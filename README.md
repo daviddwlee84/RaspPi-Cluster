@@ -177,6 +177,13 @@ Distributed Tensorflow
 
 [RediSearch](Notes/RediSearch/RediSearch.md)
 
+High Performance Computing (HPC)
+
+- [MPI](Notes/HighPerformanceComputing/MPI.md)
+- [PBS](Notes/HighPerformanceComputing/PBS.md)
+
+Resource Manager
+
 ### [Parallel Computing](Notes/ParallelComputing/ParallelComputing.md)
 
 > Intel has updated their DevCloud system and currently called oneAPI
@@ -207,3 +214,11 @@ Distributed Tensorflow
 * [14+ Raspberry Pi Server Projects](https://pimylifeup.com/category/projects/server/)
 * Change `apt-get` to `apt`?!
   * [Difference Between apt and apt-get Explained - It's FOSS](https://itsfoss.com/apt-vs-apt-get-difference/)
+* MPI
+* [Dask](https://www.dask.org/)
+  * [Deploy Dask Clusters — Dask documentation](https://docs.dask.org/en/latest/deploying.html)
+    * [Dask-MPI](https://mpi.dask.org/en/latest/)
+    * Cluster manager: PBS, SLURM, LSF, SGE
+  * [Configuring a Distributed Dask Cluster](https://blog.dask.org/2020/07/30/beginners-config)
+* Fabric alternative
+  * [AsyncSSH: Asynchronous SSH for Python — AsyncSSH 2.13.2 documentation](https://asyncssh.readthedocs.io/en/latest/) 
