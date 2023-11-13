@@ -24,6 +24,12 @@ Feature
 
 ### [Spark Streaming](https://spark.apache.org/streaming/)
 
+## Spark Modes
+
+* [Running Spark on YARN - Spark 3.5.0 Documentation](https://spark.apache.org/docs/latest/running-on-yarn.html)
+* [Running Spark on Kubernetes - Spark 3.5.0 Documentation](https://spark.apache.org/docs/latest/running-on-kubernetes.html)
+* [Spark Standalone Mode - Spark 3.5.0 Documentation](https://spark.apache.org/docs/latest/spark-standalone.html)
+
 ## Links
 
 * [Official Website](https://spark.apache.org/)
