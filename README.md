@@ -157,6 +157,7 @@ Algorithm
 Links
 
 * [Chameleon Cloud Training](https://cloudandbigdatalab.github.io/)
+* [fffaraz/awesome-selfhosted-aws: A curated list of awesome self-hosted alternatives to Amazon Web Services (AWS)](https://github.com/fffaraz/awesome-selfhosted-aws)
 
 ## Notes about specific ecosystem
 
