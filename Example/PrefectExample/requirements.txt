@@ -1,0 +1,4 @@
+prefect
+yfinance
+pandas
+pydantic
