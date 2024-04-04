@@ -72,3 +72,4 @@ macOS installation guide
 
 * [Hortonworks Sandbox](https://hortonworks.com/products/sandbox/) - The Sandbox is a straightforward, pre-configured, learning environment that contains the latest developments from Apache Hadoop, specifically the Hortonworks Data Platform (HDP).
     * [Sandbox Deployment and Install Guide](https://hortonworks.com/tutorial/sandbox-deployment-and-install-guide/)
+* [big-data-europe/docker-hadoop: Apache Hadoop docker image](https://github.com/big-data-europe/docker-hadoop)
