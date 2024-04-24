@@ -68,3 +68,30 @@ Other
 
 * [Getting Started with Prefect | Task Orchestration & Data Workflows - YouTube](https://www.youtube.com/watch?v=D5DhwVNHWeU)
 * [Introduction to Workflow Orchestration with Prefect- Kevin Kho | SciPy 2022 - YouTube](https://www.youtube.com/watch?v=XL4wgLUp-VA)
+
+---
+
+## Prefect use MinIO
+
+* [**rpeden/prefect-docker-compose: A repository that makes it easy to get up and running with Prefect 2 using Docker Compose.**](https://github.com/rpeden/prefect-docker-compose)
+* [**fraibacas/prefect-orion**](https://github.com/fraibacas/prefect-orion)
+* [A ChatGPT Discussion](https://chat.openai.com/share/9ffbaa5a-4b50-4df6-aa77-3e59273d28d0)
+
+- [Filesystems - Prefect Docs](https://docs.prefect.io/latest/concepts/filesystems/#remotefilesystem-examples)
+
+```py
+from prefect.filesystems import RemoteFileSystem
+
+minio_block = RemoteFileSystem(
+    basepath="s3://my-bucket",
+    settings={
+        "key": "MINIO_ROOT_USER",
+        "secret": "MINIO_ROOT_PASSWORD",
+        "client_kwargs": {"endpoint_url": "http://localhost:9000"},
+    },
+)
+minio_block.save("minio")
+```
+
+- [Using S3 storage with alternative S3-compliant services (e.g. Minio) · Issue #2383 · PrefectHQ/prefect](https://github.com/PrefectHQ/prefect/issues/2383)
+- [Fix `S3Bucket.load()` for nested MinIO Credentials block by kevingrismore · Pull Request #359 · PrefectHQ/prefect-aws](https://github.com/PrefectHQ/prefect-aws/pull/359)
