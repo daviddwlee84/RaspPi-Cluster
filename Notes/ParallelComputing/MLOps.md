@@ -8,6 +8,7 @@
   * [**Remote Experiment Tracking with MLflow Tracking Server — MLflow 2.12.1 documentation**](https://mlflow.org/docs/latest/tracking/tutorials/remote-server.html#create-compose-yaml)
   * [**sachua/mlflow-docker-compose: MLflow deployment with 1 command**](https://github.com/sachua/mlflow-docker-compose)
   * [**Toumash/mlflow-docker: Ready to run docker-compose configuration for ML Flow with Mysql and Minio S3**](https://github.com/Toumash/mlflow-docker)
+  * [amesar/mlflow-examples: Basic and advanced MLflow examples for many ML flavors](https://github.com/amesar/mlflow-examples)
 * [VertaAI/modeldb: Open Source ML Model Versioning, Metadata, and Experiment Management](https://github.com/VertaAI/modeldb) (maybe deprecated)
   * [vertaaiofficial's Profile | Docker Hub](https://hub.docker.com/u/vertaaiofficial) (no updates for a long time)
 * [logicalclocks/hopsworks: Hopsworks - Data-Intensive AI platform with a Feature Store](https://github.com/logicalclocks/hopsworks)
