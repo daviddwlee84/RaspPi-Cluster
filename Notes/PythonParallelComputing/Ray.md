@@ -66,3 +66,7 @@ Worker Node
 
 * [maxpumperla/learning_ray: Notebooks for the O'Reilly book "Learning Ray"](https://github.com/maxpumperla/learning_ray/)
     * [Learning Ray - Flexible Distributed Python for Machine Learning](https://maxpumperla.com/learning_ray/)
+* [使用 ray 做分布式计算和训练 - 阅微堂](https://zhiqiang.org/it/using-ray-for-distributed-computing.html)
+    * [ray/python/ray/autoscaler/local/example-full.yaml at master · ray-project/ray](https://github.com/ray-project/ray/blob/master/python/ray/autoscaler/local/example-full.yaml)
+* [Using MLflow with Tune — Ray 2.37.0](https://docs.ray.io/en/latest/tune/examples/tune-mlflow.html)
+    * [MLflow PyTorch Lightning Example — Ray 2.37.0](https://docs.ray.io/en/latest/tune/examples/includes/mlflow_ptl_example.html)
