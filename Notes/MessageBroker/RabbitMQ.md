@@ -43,3 +43,4 @@ rabbitpy
 
 * [Part 2.3: Getting started with RabbitMQ and Python - CloudAMQP](https://www.cloudamqp.com/blog/part2-3-rabbitmq-for-beginners_example-and-sample-code-python.html)
 * [Python Documentation - CloudAMQP](https://www.cloudamqp.com/docs/python.html)
+* [celery/py-amqp: amqplib fork](https://github.com/celery/py-amqp)
