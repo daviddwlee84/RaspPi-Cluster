@@ -39,11 +39,12 @@ services:
     depends_on:
       - redis
 
-  # flower:
-  #   image: mher/flower
-  #   ports:
-  #     - "5555:5555"
-  #   environment:
-  #     - FLOWER_BROKER=redis://redis:6379/0
-  #   depends_on:
-  #     - redis
+  flower:
+    image: mher/flower
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - BROKER_URL=redis://redis:6379/0
+    depends_on:
+      - redis
