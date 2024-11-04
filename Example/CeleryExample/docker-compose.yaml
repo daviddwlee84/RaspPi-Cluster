@@ -1,0 +1,49 @@
+services:
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+  
+  web:
+    build: .
+    command: flask run --host=0.0.0.0 --port=5001
+    volumes:
+      - ./app:/app
+    ports:
+      - "5001:5001"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  celery:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    volumes:
+      - ./app:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  celery-beat:
+    build: .
+    command: celery -A tasks beat --loglevel=info
+    volumes:
+      - ./app:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  # flower:
+  #   image: mher/flower
+  #   ports:
+  #     - "5555:5555"
+  #   environment:
+  #     - FLOWER_BROKER=redis://redis:6379/0
+  #   depends_on:
+  #     - redis

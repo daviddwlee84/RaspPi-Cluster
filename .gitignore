@@ -6,3 +6,8 @@ connection/
 .vscode/
 # My another rpi setting
 MyRpi
+
+# Celery
+celerybeat-schedule
+# Python
+__pycache__/

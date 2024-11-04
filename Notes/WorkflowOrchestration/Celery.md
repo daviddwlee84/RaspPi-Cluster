@@ -18,3 +18,16 @@
 ---
 
 * [**GregaVrbancic/fastapi-celery: Minimal example utilizing fastapi and celery with RabbitMQ for task queue, Redis for celery backend and flower for monitoring the celery tasks.**](https://github.com/GregaVrbancic/fastapi-celery)
+
+Celery Beat
+
+- [How To Schedule Periodic Tasks Using Celery Beat](https://www.axelerant.com/blog/how-to-schedule-periodic-tasks-using-celery-beat)
+
+Flower
+
+- [mher/flower: Real-time monitor and web admin for Celery distributed task queue](https://github.com/mher/flower)
+  - [Flower — Flower 2.0.0 documentation](https://flower.readthedocs.io/en/latest/)
+
+---
+
+- [Celery | Sentry for Python](https://docs.sentry.io/platforms/python/integrations/celery/)
