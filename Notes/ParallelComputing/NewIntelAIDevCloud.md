@@ -79,3 +79,7 @@ qmgr -c "list queue batch"
 #
 ###############################################################################
 ```
+
+---
+
+Now called [Intel® Tiber™ AI Cloud](https://www.intel.com/content/www/us/en/developer/tools/tiber/ai-cloud.html)

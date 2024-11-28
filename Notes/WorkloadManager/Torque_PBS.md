@@ -11,6 +11,8 @@ TORQUE
 
 * [Adaptive Computing - TORQUE Resource Manager](http://www.adaptivecomputing.com/products/torque/)
 * [wiki - TORQUE](https://en.wikipedia.org/wiki/TORQUE)
+* [adaptivecomputing/torque: Torque Repository](https://github.com/adaptivecomputing/torque)
+* [Overview](https://docs.adaptivecomputing.com/torque/4-2-8/Content/topics/1-installConfig/overview.htm) - This section contains some basic information about TORQUE, including how to install and configure it on your system.
 
 ### Tutorial
 
@@ -22,3 +24,9 @@ TORQUE
 * [Appendix A Commands Overview](http://docs.adaptivecomputing.com/torque/5-1-3/Content/topics/torque/12-appendices/commandsOverview.htm)
   * [qsub](http://docs.adaptivecomputing.com/torque/5-1-3/Content/topics/torque/commands/qsub.htm)
 * [PBS Job submission](http://docs.adaptivecomputing.com/torque/5-1-3/Content/topics/torque/2-jobs/jobSubmission.htm)
+
+---
+
+Quick run in Docker
+
+* [hpchud/vcc-torque: A Torque batch scheduling cluster in Docker containers](https://github.com/hpchud/vcc-torque)
