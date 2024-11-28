@@ -20,6 +20,10 @@
        * [Queue Management and Job Submission](https://devcloud.intel.com/oneapi/learn/job-submission/)
        * [Advanced Queue Management](https://devcloud.intel.com/oneapi/learn/advanced-queue/)
 
+## Structure
+
+[![DevCloud Abstract Diagram v2.png](../.images/DevCloud%20Abstract%20Diagram%20v2.png)](https://devcloud.intel.com/oneapi/static/images/png/DevCloud_Abstract_Diagram_v2.png)
+
 ## Queue Management
 
 ### qsub
