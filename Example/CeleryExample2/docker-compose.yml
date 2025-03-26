@@ -1,0 +1,45 @@
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      
+  celery-cpu-worker:
+    build: .
+    depends_on:
+      - redis
+    command: >
+      celery -A celery_app worker
+      --loglevel=info
+      --concurrency=4
+      --queues=cpu_queue
+      --hostname=worker_cpu@%h
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      
+  celery-io-worker:
+    build: .
+    depends_on:
+      - redis
+    command: >
+      celery -A celery_app worker
+      --loglevel=info
+      --pool=eventlet
+      --concurrency=100
+      --queues=io_queue
+      --hostname=worker_io@%h
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1 
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
