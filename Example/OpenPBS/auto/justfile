@@ -1,0 +1,5 @@
+start:
+    docker compose -f docker-compose.openpbs.auto.yml up
+
+start-background:
+    docker compose -f docker-compose.openpbs.auto.yml up -d

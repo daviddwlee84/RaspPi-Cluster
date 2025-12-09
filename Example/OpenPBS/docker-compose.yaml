@@ -1,0 +1,33 @@
+networks:
+  hpc:
+
+services:
+  # --- Head: server + scheduler + comm ---
+  pbs-head:
+    image: pbspro/pbspro:latest
+    container_name: pbs-head
+    hostname: pbs-head
+    tty: true
+    stdin_open: true
+    networks: [hpc]
+
+  # --- Compute nodes: mom only ---
+  pbs-c1:
+    image: pbspro/pbspro:latest
+    container_name: pbs-c1
+    hostname: pbs-c1
+    environment:
+      - PBS_START_MOM=1
+    tty: true
+    stdin_open: true
+    networks: [hpc]
+
+  pbs-c2:
+    image: pbspro/pbspro:latest
+    container_name: pbs-c2
+    hostname: pbs-c2
+    environment:
+      - PBS_START_MOM=1
+    tty: true
+    stdin_open: true
+    networks: [hpc]

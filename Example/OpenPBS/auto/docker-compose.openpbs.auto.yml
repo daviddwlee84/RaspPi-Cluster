@@ -1,0 +1,58 @@
+networks:
+  hpc:
+
+services:
+  pbs-head:
+    image: pbspro/pbspro:latest
+    container_name: pbs-head
+    hostname: pbs-head
+    environment:
+      # 嘗試用 env 讓 image 自動起 server/sched/comm
+      - PBS_START_SERVER=1
+      - PBS_START_SCHED=1
+      - PBS_START_COMM=1
+      - PBS_SERVER=pbs-head
+    tty: true
+    stdin_open: true
+    networks: [hpc]
+
+  pbs-c1:
+    image: pbspro/pbspro:latest
+    container_name: pbs-c1
+    hostname: pbs-c1
+    environment:
+      - PBS_START_MOM=1
+      - PBS_SERVER=pbs-head
+    tty: true
+    stdin_open: true
+    networks: [hpc]
+    depends_on: [pbs-head]
+
+  pbs-c2:
+    image: pbspro/pbspro:latest
+    container_name: pbs-c2
+    hostname: pbs-c2
+    environment:
+      - PBS_START_MOM=1
+      - PBS_SERVER=pbs-head
+    tty: true
+    stdin_open: true
+    networks: [hpc]
+    depends_on: [pbs-head]
+
+  # 一次性初始化：自動 create node + set queue
+  pbs-init:
+    image: pbspro/pbspro:latest
+    container_name: pbs-init
+    hostname: pbs-init
+    environment:
+      - PBS_SERVER=pbs-head
+    networks: [hpc]
+    depends_on:
+      - pbs-head
+      - pbs-c1
+      - pbs-c2
+    volumes:
+      - ./pbs-init.sh:/init/pbs-init.sh:ro
+    entrypoint: ["/bin/bash", "-lc", "/init/pbs-init.sh"]
+    restart: "no"

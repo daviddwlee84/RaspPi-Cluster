@@ -11,3 +11,5 @@ MyRpi
 celerybeat-schedule
 # Python
 __pycache__/
+
+.DS_Store
