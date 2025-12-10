@@ -139,6 +139,9 @@ $SPARK_HOME/bin/docker-image-tool.sh \
 
 ### K3s
 
+- [K3s](https://k3s.io/)
+- [k3s-io/k3s: Lightweight Kubernetes](https://github.com/k3s-io/k3s)
+
 ## Helm
 
 ## Kubernetes + Spark

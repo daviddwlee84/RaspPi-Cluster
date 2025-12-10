@@ -1,0 +1,18 @@
+# hello_sky.yaml
+name: hello-world-job
+
+resources:
+  # 這裡先只用 CPU，確保你能跑起來 (如果你有 GPU 且 K3s 有設好，可改成 accelerators: T4:1)
+  cpus: 1
+  memory: 1+ # 1 GB 以上
+
+setup: |
+  echo "--- 環境初始化中 ---"
+  pip install pyfiglet
+
+run: |
+  echo "--- 開始執行任務 ---"
+  python3 -c "import pyfiglet; print(pyfiglet.figlet_format('SkyPilot Rules!'))"
+  echo "我正在這台機器上運行："
+  hostname
+  echo "任務結束時間：$(date)"
